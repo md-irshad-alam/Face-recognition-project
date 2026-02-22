@@ -1,0 +1,25 @@
+[phases.setup]
+nixPkgs = [
+    "cmake", 
+    "gcc", 
+    "xorg.libX11", 
+    "xorg.libXext", 
+    "xorg.libXrender", 
+    "libglvnd", 
+    "stdenv.cc.cc.lib",
+    "zlib"
+]
+
+[phases.build]
+# Use MAKEFLAGS to limit CPU cores (prevents freezing/timeout)
+# --no-cache-dir helps with memory management
+cmds = [
+    "python -m venv .venv", 
+    ". .venv/bin/activate", 
+    "export MAKEFLAGS='-j 1'", 
+    "pip install --no-cache-dir -r requirements.txt"
+]
+
+[variables]
+# This tells Python where the Nix-installed C++ libraries actually live
+LD_LIBRARY_PATH = "/nix/var/nix/profiles/default/lib:/usr/lib:/usr/local/lib"
