@@ -1,4 +1,3 @@
--- Schema applies to the configured database (e.g., railway)
 
 CREATE TABLE IF NOT EXISTS students (
     id VARCHAR(50) PRIMARY KEY,
@@ -7,6 +6,7 @@ CREATE TABLE IF NOT EXISTS students (
     section VARCHAR(10),
     email VARCHAR(100),
     phone VARCHAR(20),
+    parent_phone VARCHAR(20),
     dob DATE,
     admission_date DATE,
     photo_url VARCHAR(255),
@@ -29,6 +29,30 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255),
     full_name VARCHAR(100),
     google_id VARCHAR(100),
+    role VARCHAR(20) DEFAULT 'user',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS teachers (
+    id VARCHAR(50) PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100) UNIQUE,
+    highest_education VARCHAR(100),
+    years_of_experience INT,
+    specialization VARCHAR(100),
+    department VARCHAR(100),
+    bio TEXT,
+    office_days VARCHAR(100),
+    office_time VARCHAR(100),
+    assigned_classes TEXT,
+    notifications TEXT,
+    status VARCHAR(20) DEFAULT 'active',
+    is_phd BOOLEAN DEFAULT FALSE,
+    photo_url VARCHAR(255),
+    password VARCHAR(255),
+    role VARCHAR(20) DEFAULT 'teacher',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -59,4 +83,48 @@ CREATE TABLE IF NOT EXISTS questions (
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
 );
 
--- Insert some dummy data for testing
+CREATE TABLE IF NOT EXISTS devices (
+    device_id VARCHAR(100) PRIMARY KEY,
+    device_name VARCHAR(100),
+    device_type VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'active',
+    battery_level INT DEFAULT 0,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ip_address VARCHAR(50)
+);
+CREATE TABLE IF NOT EXISTS leave_balances (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_id VARCHAR(50),
+    sick_leave INT DEFAULT 15,
+    casual_leave INT DEFAULT 10,
+    earned_leave INT DEFAULT 30,
+    academic_year VARCHAR(10),
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_id VARCHAR(50),
+    leave_type ENUM('sick', 'casual', 'earned'),
+    start_date DATE NOT NULL,
+    end_date DATE,
+    reason TEXT,
+    status ENUM('PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'COMPLETED') DEFAULT 'PENDING',
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved_at TIMESTAMP NULL,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS payment_links (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    amount DECIMAL(10, 2) NOT NULL,
+    fee_type VARCHAR(100) NOT NULL,
+    gateway_link_id VARCHAR(100) UNIQUE,
+    link_url TEXT,
+    status ENUM('PENDING', 'PAID', 'EXPIRED', 'CANCELLED') DEFAULT 'PENDING',
+    payment_id VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
