@@ -1,14 +1,56 @@
 import styled from 'styled-components';
 
 export const PageContainer = styled.div`
-  padding: 2.5rem;
+  padding: 0;
   max-width: 1600px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  // background-color: #f8fafc;
+  // height: 100vh;
+  overflow: hidden;
+
+  @media (max-width: 1024px) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+`;
+
+export const PageHeaderWrapper = styled.div`
+padding
+  // padding-left: rem
+  // background: #f8fafc;
+  z-index: 10;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem 1.5rem 0.5rem;
+  }
+`;
+
+export const ScrollableContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
-  background-color: #f8fafc;
-  min-height: 100vh;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 1rem 1.5rem;
+    gap: 1.5rem;
+  }
 `;
 
 export const StatsGrid = styled.div`
@@ -72,6 +114,7 @@ export const StatValue = styled.span`
 `;
 
 export const Header = styled.div`
+padding-left:0.8rem;
   display: flex;
   justify-content: space-between;
   align-items: center;

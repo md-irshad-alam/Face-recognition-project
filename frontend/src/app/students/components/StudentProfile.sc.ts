@@ -5,14 +5,50 @@ export const ProfileWrapper = styled.div`
   max-width: 1400px;
   margin: 0 auto;
   background-color: #f8fafc;
-  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @media (max-width: 1024px) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+`;
+
+export const ProfileScrollArea = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 2rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
 
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 10px;
+  }
+
   @media (max-width: 768px) {
-    padding: 0;
+    padding: 0 1rem 1.5rem;
     gap: 1.5rem;
+  }
+`;
+
+export const ProfileHeaderWrapper = styled.div`
+  padding: 2rem 2rem 1rem;
+  background: #f8fafc;
+  z-index: 10;
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem 0.5rem;
   }
 `;
 
@@ -106,6 +142,7 @@ export const MainGrid = styled.div`
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 2rem;
+  align-items: start;
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
@@ -130,20 +167,7 @@ export const ProfileCard = styled.div`
   position: relative;
 `;
 
-export const QRCodeMini = styled.div`
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  width: 44px;
-  height: 44px;
-  background: #f1f5f9;
-  border-radius: 8px;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e8f0;
-`;
+
 
 export const AvatarBox = styled.div`
   width: 140px;
@@ -191,12 +215,7 @@ export const StudentId = styled.p`
   margin: 0;
 `;
 
-export const ButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-  width: 100%;
-  margin-top: 1.5rem;
-`;
+
 
 export const ActionBtn = styled.button<{ $primary?: boolean }>`
   flex: 1;
@@ -483,29 +502,59 @@ export const DataItem = styled.div`
 `;
 
 export const HighlightCard = styled.div`
-  background: #F8FAFC;
-  border-radius: 20px;
-  padding: 1.5rem;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+`;
+
+export const QRWrapper = styled.div`
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  justify-content: center;
 
-  .icon {
-    width: 48px;
-    height: 48px;
-    background: white;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: #4F46E5;
+  &:hover {
+    .download-overlay {
+      opacity: 1;
+      transform: scale(1);
+    }
+    transform: scale(1.02);
+  }
+`;
+
+export const DownloadOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(79, 70, 229, 0.9);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 8px;
+
+  svg {
+    font-size: 2rem;
   }
 
-  .info {
-    label { font-size: 0.625rem; font-weight: 800; color: #94A3B8; text-transform: uppercase; }
-    h3 { margin: 0; font-size: 1.75rem; font-weight: 800; color: #1e293b; }
+  span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 `;
 

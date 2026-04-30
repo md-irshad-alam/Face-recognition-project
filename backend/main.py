@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import cv2
 import face_recognition
@@ -8,11 +8,14 @@ import base64
 import json
 import database
 import auth
-from routers import exams, teachers, fees
+import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
+from dataclasses import asdict
+from routers import exams, teachers, fees, whatsapp
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
 
 app = FastAPI(title="Face Recognition Attendance System")
 app.include_router(fees.router)
+app.include_router(whatsapp.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,7 +61,7 @@ known_face_encodings = []
 known_face_names = []
 
 def load_known_faces():
-    """Loads known faces from the 'faces' directory."""
+    """Loads known faces from the 'faces' directory and populates the FAISS index."""
     global known_face_encodings, known_face_names
     faces_dir = "faces"
     if not os.path.exists(faces_dir):
@@ -66,8 +69,7 @@ def load_known_faces():
         print(f"Created {faces_dir} directory. Please add images there.")
         return
 
-    print("Loading known faces...")
-    # Clear existing lists to avoid duplicates if reloaded
+    print("Loading known faces into optimized FAISS index...")
     known_face_encodings = []
     known_face_names = []
     
@@ -80,7 +82,6 @@ def load_known_faces():
                 if encodings:
                     encoding = encodings[0]
                     known_face_encodings.append(encoding)
-                    # Use filename without extension as name/ID (e.g. "1001" for student ID)
                     name = os.path.splitext(filename)[0]
                     known_face_names.append(name)
                     print(f"Loaded face: {name}")
@@ -88,7 +89,10 @@ def load_known_faces():
                     print(f"No face found in {filename}")
             except Exception as e:
                 print(f"Error loading {filename}: {e}")
-    print(f"Total known faces loaded: {len(known_face_names)}")
+    
+    # ← Populate the optimized FAISS index after loading all faces
+    face_engine.load_faces_into_index(known_face_encodings, known_face_names)
+    print(f"Total known faces loaded into index: {len(known_face_names)}")
 
 # Load faces and init DB on startup
 @app.on_event("startup")
@@ -101,8 +105,8 @@ def read_root():
     return {"message": "Welcome to the Face Recognition Attendance System API"}
 
 @app.get("/attendance/today")
-def get_todays_attendance_list(class_name: str = None, section: str = None):
-    return database.get_todays_attendance(class_name=class_name, section=section)
+def get_todays_attendance_list(class_name: str = None):
+    return database.get_todays_attendance(class_name=class_name)
 
 @app.get("/stats")
 def get_stats():
@@ -135,6 +139,8 @@ async def create_student(
     transport_fee: float = Form(0),
     hostel_fee: float = Form(0),
     total_monthly_fee: float = Form(0),
+    last_payment_date: str = Form(None),
+    opening_balance: float = Form(0),
     photo: UploadFile = File(None)
 ):
     try:
@@ -174,13 +180,15 @@ async def create_student(
         query = """
         INSERT INTO students (
             id, name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url, 
-            student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee, is_on_hold
+            student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee, is_on_hold,
+            last_payment_date, opening_balance
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s, %s)
         """
         values = (
             id, name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url,
-            student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee
+            student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee,
+            last_payment_date, opening_balance
         )
         cursor.execute(query, values)
         conn.commit()
@@ -233,6 +241,8 @@ async def update_student(
     transport_fee: float = Form(0),
     hostel_fee: float = Form(0),
     total_monthly_fee: float = Form(0),
+    last_payment_date: str = Form(None),
+    opening_balance: float = Form(0),
     photo: UploadFile = File(None)
 ):
     try:
@@ -288,14 +298,14 @@ async def update_student(
         UPDATE students 
         SET name = %s, class_name = %s, section = %s, email = %s, phone = %s, 
             parent_phone = %s, dob = %s, admission_date = %s, photo_url = %s,
-            student_type = %s, transport_type = %s, tuition_fee = %s, 
-            transport_fee = %s, hostel_fee = %s, total_monthly_fee = %s
+            student_type = %s, transport_type = %s, tuition_fee = %s, transport_fee = %s, hostel_fee = %s, total_monthly_fee = %s,
+            last_payment_date = %s, opening_balance = %s
         WHERE id = %s
         """
         values = (
             name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url,
             student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee,
-            student_id
+            last_payment_date, opening_balance, student_id
         )
         cursor.execute(query, values)
         conn.commit()
@@ -356,90 +366,116 @@ def toggle_student_hold(student_id: str, hold_status: bool):
 
 
 @app.post("/scan-face")
-async def scan_face(payload: ScanRequest, current_user: dict = Depends(auth.get_current_user)):
+async def scan_face(
+    payload: ScanRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(auth.get_current_user)
+):
     """
-    Receives face image from mobile app, recognizes it, marks attendance,
-    and broadcasts the result to all connected web dashboard clients via WebSocket.
+    Optimized face scan endpoint.
+
+    Pipeline:
+      decode → face_engine (blur check → align → embed → FAISS search
+      → adaptive threshold → Redis cache) → DB write → WebSocket broadcast
     """
     try:
-        # Strip base64 data URI prefix if present
+        # ── Decode base64 image ───────────────────────────────────────────
         image_data = payload.image
         if "," in image_data:
             image_data = image_data.split(",")[1]
-        
         image_bytes = base64.b64decode(image_data)
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        if frame is None:
-            raise HTTPException(status_code=400, detail="Invalid image data")
-
-        # Convert to RGB for face_recognition
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        face_locations = face_recognition.face_locations(rgb_frame)
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-
-        if not face_encodings:
-            return {
-                "status": "error",
-                "message": "No face detected in image",
-                "attendance_marked": False
-            }
-
-        face_encoding = face_encodings[0]
-        # Use a tolerance of 0.6 (default) or 0.5 for more strictness. 
-        # Lower distance means better match.
-        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        matches = face_recognition.compare_faces(known_face_encodings, face_encoding, tolerance=0.5)
-        
-        # Update device status
-        database.update_device_status(
-            payload.device_id, 
-            name=current_user.get('full_name'), 
-            device_type="Mobile", 
-            battery=getattr(payload, 'battery', None)
+        # ── Update device status in background (non-blocking) ─────────────
+        background_tasks.add_task(
+            database.update_device_status,
+            payload.device_id,
+            current_user.get('full_name'),
+            "Mobile",
+            getattr(payload, 'battery', None)
         )
-        
-        result = None
 
-        if True in matches:
-            best_match_index = np.argmin(face_distances)
-            student_id = known_face_names[best_match_index]
-            print(f"Recognized Student ID: {student_id} with distance: {face_distances[best_match_index]}")
-            
+        # ── Run optimized recognition engine ──────────────────────────────
+        student_id, metrics = face_engine.recognize_face(image_bytes)
+
+        # ── Build API result ─────────────────────────────────────────────
+        if not metrics.face_found:
+            result = {
+                "status": "error",
+                "message": "No face detected" if metrics.blur_score is None or metrics.blur_score >= face_engine.BLUR_VARIANCE_THRESHOLD else "Image too blurry — please rescan in better lighting",
+                "attendance_marked": False,
+                "device_id": payload.device_id,
+                "timestamp": payload.timestamp,
+                "metrics": asdict(metrics),
+            }
+        elif student_id:
             student = database.get_student_by_id(student_id)
             if student:
                 already_marked = database.check_attendance_status(student_id)
-                if not already_marked:
-                    database.mark_attendance(student_id)
 
+                if already_marked:
+                    # Student already scanned today — return a distinct status so
+                    # the mobile app can show the "Already Marked" amber screen
+                    result = {
+                        "status": "already_marked",
+                        "student_name": student['name'],
+                        "student_id": student_id,
+                        "scanner_name": current_user['full_name'],
+                        "message": "Attendance already marked today",
+                        "attendance_marked": False,
+                        "already_marked": True,
+                        "photo_url": student.get('photo_url'),
+                        "class_name": student.get('class_name'),
+                        "section": student.get('section'),
+                        "device_id": payload.device_id,
+                        "timestamp": payload.timestamp,
+                    }
+                else:
+                    # Fresh scan — write attendance in background (non-blocking)
+                    background_tasks.add_task(database.mark_attendance, student_id)
+                    result = {
+                        "status": "success",
+                        "student_name": student['name'],
+                        "student_id": student_id,
+                        "scanner_name": current_user['full_name'],
+                        "message": "Attendance marked successfully",
+                        "attendance_marked": True,
+                        "already_marked": False,
+                        "photo_url": student.get('photo_url'),
+                        "class_name": student.get('class_name'),
+                        "section": student.get('section'),
+                        "device_id": payload.device_id,
+                        "timestamp": payload.timestamp,
+                        "metrics": {
+                            "confidence": metrics.confidence,
+                            "distance": metrics.distance,
+                            "processing_ms": metrics.processing_ms,
+                            "retried": metrics.retried,
+                            "cache_hit": metrics.cache_hit,
+                        }
+                    }
+            else:
                 result = {
-                    "status": "success",
-                    "student_name": student['name'],
-                    "student_id": student_id,
-                    "scanner_name": current_user['full_name'], # Identified the teacher
-                    "message": "Attendance already marked today" if already_marked else "Attendance marked",
-                    "attendance_marked": True,
-                    "already_marked": already_marked,
-                    "photo_url": student.get('photo_url'),
-                    "class_name": student.get('class_name'),
-                    "section": student.get('section'),
+                    "status": "fail",
+                    "message": "Student not found in database",
+                    "attendance_marked": False,
                     "device_id": payload.device_id,
                     "timestamp": payload.timestamp,
                 }
-        
-        if result is None:
+        else:
             result = {
                 "status": "fail",
-                "message": "Face not recognized",
+                "message": "Face not recognized" + (" (retried with relaxed threshold)" if metrics.retried else ""),
                 "scanner_name": current_user['full_name'],
                 "attendance_marked": False,
                 "device_id": payload.device_id,
                 "timestamp": payload.timestamp,
+                "metrics": {
+                    "best_distance": metrics.distance,
+                    "processing_ms": metrics.processing_ms,
+                },
             }
 
-        # ── Broadcast to all connected web dashboard clients ────────────────
+        # ── Broadcast to all WebSocket dashboard clients ──────────────────
         await manager.broadcast_attendance({
             "type": "attendance_event",
             "data": result,
@@ -448,8 +484,10 @@ async def scan_face(payload: ScanRequest, current_user: dict = Depends(auth.get_
         return result
 
     except Exception as e:
-        print(f"Scan Face Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error during face processing")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Scan pipeline error: {str(e)}")
+
 
 
 @app.websocket("/ws/attendance")

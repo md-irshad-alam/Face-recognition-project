@@ -40,10 +40,11 @@ class ApiClient {
       // Handle non-2xx responses
       if (!response.ok) {
         if (response.status === 401) {
-          // Automatic logout on token expiry
-          if (typeof window !== 'undefined') {
+          // Automatic logout on token expiry, but don't redirect if already on login
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            const currentPath = window.location.pathname + window.location.search;
             localStorage.removeItem('token');
-            window.location.href = '/login';
+            window.location.href = `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
           }
         }
         const errorData = await response.json().catch(() => ({ message: 'An error occurred' }));

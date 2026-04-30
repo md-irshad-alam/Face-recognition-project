@@ -76,11 +76,11 @@ export default function Loading() {
   return (
     <Container>
       <LogoContainer>
-        <Emblem>A</Emblem>
-        <AcademyName>Academic Architect</AcademyName>
+        <Emblem>V</Emblem>
+        <AcademyName>VISIO</AcademyName>
       </LogoContainer>
       <Loader />
-      <StatusText>Hydrating Academic Core...</StatusText>
+      <StatusText>Initializing Visio...</StatusText>
     </Container>
   );
 }

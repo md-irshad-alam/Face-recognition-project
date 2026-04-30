@@ -115,7 +115,7 @@ export const FormCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 48px;
-  min-height: 520px; /* Prevents action buttons from jumping */
+  min-height: 420px; /* Prevents action buttons from jumping */
 `;
 
 /* — Toggle Switch ————————————————————————— */
@@ -219,6 +219,7 @@ export const Label = styled.label`
 `;
 
 export const Input = styled.input`
+  width: 100%;
   padding: 14px 18px;
   border-radius: 14px;
   background: #F8FAFC;
@@ -241,6 +242,7 @@ export const Input = styled.input`
 `;
 
 export const Select = styled.select`
+  width: 100%;
   padding: 14px 18px;
   border-radius: 14px;
   background: #F8FAFC;
@@ -250,6 +252,10 @@ export const Select = styled.select`
   color: #1E293B;
   appearance: none;
   cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
 
   &:focus {
     outline: none;

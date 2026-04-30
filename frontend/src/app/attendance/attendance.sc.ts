@@ -7,14 +7,14 @@ export const PageWrapper = styled.div`
   background-color: #F8FAFC;
   margin: -40px;
   padding: 40px;
-  height: calc(100vh - 0px); /* Fill the viewport */
+  // height: calc(100vh - 0px); /* Fill the viewport */
   overflow: hidden; /* Prevent whole page scroll */
   
   @media (max-width: 768px) {
-    padding: 20px;
+    padding: 24px;
     margin: 0;
     height: auto;
-    overflow-y: auto; /* Allow scroll on small mobile if needed */
+    overflow-y: auto;
   }
 `;
 
@@ -30,6 +30,12 @@ export const HeaderRow = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
 `;
 
 export const TitleGroup = styled.div`
@@ -105,14 +111,27 @@ export const StatusInfo = styled.div`
   }
 `;
 
-export const RefreshBtn = styled.button`
+export const RefreshBtn = styled.button<{ $isRefreshing?: boolean }>`
   background: none;
   border: none;
   color: #4F46E5;
   cursor: pointer;
   padding: 8px;
-  transition: transform 0.3s;
-  &:hover { transform: rotate(180deg); }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  
+  svg {
+    animation: ${p => p.$isRefreshing ? 'spin 1s linear infinite' : 'none'};
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  &:hover { transform: scale(1.1); }
 `;
 
 export const FilterSection = styled.div`
@@ -120,11 +139,20 @@ export const FilterSection = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 export const FilterGroup = styled.div`
   display: flex;
   gap: 16px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 export const SelectWrapper = styled.div`
@@ -138,9 +166,19 @@ export const SelectWrapper = styled.div`
   gap: 12px;
   min-width: 220px;
   cursor: pointer;
+  transition: all 0.2s;
   
   svg { color: #64748B; }
   span { font-size: 0.875rem; font-weight: 700; color: #334155; }
+
+  &:hover {
+    border-color: #4F46E5;
+    background: #F8FAFC;
+  }
+
+  @media (max-width: 768px) {
+    min-width: 0;
+  }
 `;
 
 export const PDFButton = styled.button`
@@ -613,6 +651,12 @@ export const DeviceCard = styled.div<{ $offline?: boolean }>`
   transition: border-color 0.2s;
 
   &:hover { border-color: #4F46E5; }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 `;
 
 export const DeviceIcon = styled.div`
@@ -716,10 +760,10 @@ export const LogsCard = styled.div`
   background: white;
   border: 1px solid #E2E8F0;
   border-radius: 32px;
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  max-height: 100%; /* Take available space */
+  max-height: 400px; /* Take available space */
   
   .header { 
     display: flex; 

@@ -60,10 +60,14 @@ export default function FeesPage() {
       if (response.ok) {
         toast.success(`WhatsApp reminder sent to ${studentName}'s parent.`, { icon: '📲' });
       } else {
-        throw new Error(data.detail || 'Failed to send reminder');
+        // Show the detailed error from backend (like cooldown minutes)
+        toast.error(data.detail || 'Failed to send reminder', {
+          duration: 4000,
+          style: { minWidth: '300px' }
+        });
       }
     } catch (err: any) {
-      toast.error(err.message || 'Messaging gateway connection failed');
+      toast.error('Messaging gateway connection failed');
     }
   };
 
@@ -97,12 +101,21 @@ export default function FeesPage() {
       </SC.StudentCell>
     )},
     { header: 'Fee Type', accessor: 'type' },
-    { header: 'Amount', accessor: (row: any) => <span style={{ fontWeight: 800, color: '#1E293B' }}>₹{row.amount.replace('$', '')}</span> },
-    { header: 'Due Month', accessor: (row: any) => <span style={{ color: '#64748B' }}>Oct 2023</span> },
+    { header: 'Amount', accessor: (row: any) => (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <span style={{ fontWeight: 800, color: '#1E293B' }}>₹{row.total_due.toLocaleString()}</span>
+        {row.arrears > 0 && <span style={{ fontSize: '0.6875rem', color: '#EF4444' }}>Inc. ₹{row.arrears.toLocaleString()} arrears</span>}
+      </div>
+    )},
+    { header: 'Due Months', accessor: (row: any) => (
+      <span style={{ color: row.months_pending > 0 ? '#EF4444' : '#64748B', fontWeight: row.months_pending > 0 ? 700 : 400 }}>
+        {row.months_pending > 0 ? `${row.months_pending} Months` : 'Current'}
+      </span>
+    )},
     { header: 'Status', accessor: (row: any) => <SC.StatusPill $status={row.status}>{row.status}</SC.StatusPill> },
     { header: 'Action', align: 'right' as const, accessor: (row: any) => (
       row.status === 'Paid' ? <RiMore2Fill size={20} color="#94A3B8" /> :
-      <SC.ActionButton onClick={() => handleSendReminder(row.id, row.name, row.amount, row.type)}>Send Reminder</SC.ActionButton>
+      <SC.ActionButton onClick={() => handleSendReminder(row.id, row.name, `₹${row.total_due}`, row.type)}>Send Reminder</SC.ActionButton>
     )}
   ], []);
 
@@ -125,8 +138,8 @@ export default function FeesPage() {
     },
     { header: 'ID', accessor: 'id' },
     { header: 'Name', accessor: 'name' },
-    { header: 'Amount', accessor: (row: any) => `₹${row.amount.replace('$', '')}` },
-    { header: 'Due Months', accessor: () => 'Oct' },
+    { header: 'Amount', accessor: (row: any) => <span style={{ fontWeight: 700 }}>₹{row.total_due.toLocaleString()}</span> },
+    { header: 'Pending', accessor: (row: any) => row.months_pending > 0 ? `${row.months_pending} Mo` : 'None' },
     { header: 'Action', align: 'right' as const, accessor: (row: any) => (
       <SC.ActionButton onClick={() => {
         setSelectedStudents([row.id]);

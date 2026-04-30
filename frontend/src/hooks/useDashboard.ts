@@ -28,15 +28,18 @@ export function useDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   const fetchDashboardData = useCallback(async () => {
-    setLoading(true)
     try {
       const [statsRes, examsRes] = await Promise.all([
-        api.get('/stats'),
-        api.get('/exams')
+        api.get<DashboardStats>('/stats'),
+        api.get<{ exams: RecentExam[] }>('/exams')
       ])
       
-      setStats(statsRes.data)
-      setExams(examsRes.data.slice(0, 5)) // Show top 5
+      // Handle different response formats (backend might return {data: ...} or direct object)
+      const statsData = (statsRes as any).data || statsRes;
+      const examsData = (examsRes as any).data?.exams || (examsRes as any).exams || [];
+      
+      setStats(statsData)
+      setExams(Array.isArray(examsData) ? examsData.slice(0, 5) : [])
       setError(null)
     } catch (err) {
       console.error("Dashboard data fetch error:", err)
@@ -48,6 +51,9 @@ export function useDashboard() {
 
   useEffect(() => {
     fetchDashboardData()
+    // Auto-refresh every 30 seconds for live pulse
+    const interval = setInterval(fetchDashboardData, 30000)
+    return () => clearInterval(interval)
   }, [fetchDashboardData])
 
   return { stats, exams, loading, error, refresh: fetchDashboardData }

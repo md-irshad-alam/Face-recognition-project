@@ -12,16 +12,17 @@ export interface AttendanceRecord {
   remarks: string;
 }
 
-export const useAttendance = (class_name?: string, section?: string) => {
+export const useAttendance = (class_name?: string) => {
   return useQuery<AttendanceRecord[]>({
-    queryKey: ['attendance', 'today', class_name, section],
+    queryKey: ['attendance', 'today', class_name],
     queryFn: async () => {
+      // Clean up params: only send class_name
       const response = await api.get<AttendanceRecord[]>('/attendance/today', {
-        params: { class_name, section }
+        params: { class_name }
       });
       return response;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds as backup to WebSocket
+    refetchInterval: 30000, 
   });
 };
 

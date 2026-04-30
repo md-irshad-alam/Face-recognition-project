@@ -38,13 +38,14 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
 
   const [formData, setFormData] = useState({
     id: initialData?.id || generateInstitutionalID('STUD'),
-    firstName: initialData?.name?.split(' ')[0] || 'Alexander',
-    lastName: initialData?.name?.split(' ').slice(1).join(' ') || 'Hamilton',
-    dob: initialData?.dob || '2015-05-12',
-    gender: 'male', // Default or from data if available
-    guardianName: initialData?.guardianName || 'James Hamilton', 
-    guardianPhone: initialData?.phone || '+1 234 567 8900',
+    firstName: initialData?.name?.split(' ')[0] || '',
+    lastName: initialData?.name?.split(' ').slice(1).join(' ') || '',
+    dob: initialData?.dob || '',
+    gender: 'male',
+    guardianName: initialData?.guardianName || '', 
+    guardianPhone: initialData?.phone || '',
     parent_phone: initialData?.parent_phone || '',
+    guardianAddress: (initialData as any)?.address || '',
     relation: initialData?.relation || 'Father',
     section: initialData?.section || 'A',
     admissionDate: initialData?.admission_date || new Date().toISOString().split('T')[0],
@@ -52,7 +53,9 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
     transportType: (initialData as any)?.transport_type || 'Self',
     tuitionFee: (initialData as any)?.tuition_fee || 1500,
     transportFee: (initialData as any)?.transport_fee || 0,
-    hostelFee: (initialData as any)?.hostel_fee || 0
+    hostelFee: (initialData as any)?.hostel_fee || 0,
+    lastPaymentDate: (initialData as any)?.last_payment_date || new Date().toISOString().split('T')[0],
+    openingBalance: (initialData as any)?.opening_balance || 0
   });
 
   const [totalFee, setTotalFee] = useState(0);
@@ -109,6 +112,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
       fd.append('email', `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}@school.edu`);
       fd.append('phone', formData.guardianPhone);
       fd.append('parent_phone', formData.parent_phone);
+      fd.append('address', formData.guardianAddress);
       fd.append('dob', formData.dob);
       fd.append('admission_date', formData.admissionDate);
       fd.append('student_type', formData.studentType);
@@ -117,6 +121,8 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
       fd.append('transport_fee', String(formData.transportFee));
       fd.append('hostel_fee', String(formData.hostelFee));
       fd.append('total_monthly_fee', String(totalFee));
+      fd.append('last_payment_date', formData.lastPaymentDate);
+      fd.append('opening_balance', String(formData.openingBalance));
       if (photo) fd.append('photo', photo);
 
       const success = isEditMode 
@@ -359,13 +365,42 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 </SC.InputGroup>
               )}
 
+              <SC.InputGroup style={{ gridColumn: 'span 3' }}>
+                <div style={{ borderTop: '1px dashed #E2E8F0', margin: '20px 0 10px 0' }} />
+                <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <RiFileList3Line size={18} color="#4F46E5" />
+                  Historical Billing Setup
+                </h4>
+              </SC.InputGroup>
+
+              <SC.InputGroup>
+                <SC.Label>Last Paid Month (Anchor)</SC.Label>
+                <SC.Input 
+                  type="date"
+                  value={formData.lastPaymentDate}
+                  onChange={(e) => setFormData({...formData, lastPaymentDate: e.target.value})}
+                />
+                <span style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '4px' }}>System will bill starting from the month after this date.</span>
+              </SC.InputGroup>
+
+              <SC.InputGroup>
+                <SC.Label>Initial Outstanding (Carry Forward)</SC.Label>
+                <SC.Input 
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={formData.openingBalance}
+                  onChange={(e) => setFormData({...formData, openingBalance: e.target.value})}
+                />
+                <span style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '4px' }}>One-time balance added to the total due.</span>
+              </SC.InputGroup>
+
                <SC.InputGroup style={{ gridColumn: 'span 3' }}>
                 <div style={{ background: '#F0F9FF', padding: '16px 24px', borderRadius: '16px', border: '1px solid #BAE6FD', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ color: '#0369A1', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Consolidated Billing</span>
-                    <span style={{ color: '#0369A1', fontSize: '0.875rem', fontWeight: 600 }}>Total Calculated Monthly Fee</span>
+                    <span style={{ color: '#0369A1', fontSize: '0.875rem', fontWeight: 600 }}>Calculated Monthly Fee</span>
                   </div>
-                  <span style={{ color: '#0369A1', fontWeight: 900, fontSize: '1.75rem' }}>${totalFee.toLocaleString()}</span>
+                  <span style={{ color: '#0369A1', fontWeight: 900, fontSize: '1.75rem' }}>₹{totalFee.toLocaleString()}</span>
                 </div>
               </SC.InputGroup>
             </SC.InputsGrid>
@@ -383,7 +418,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
               <SC.InputGroup>
                 <SC.Label>Guardian Full Name</SC.Label>
                 <SC.Input 
-                  placeholder="e.g., James Hamilton" 
+                  placeholder="e.g. James Hamilton" 
                   value={formData.guardianName}
                   onChange={(e) => setFormData({...formData, guardianName: e.target.value})}
                 />
@@ -402,7 +437,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
               <SC.InputGroup>
                 <SC.Label>Emergency Contact Number</SC.Label>
                 <SC.Input 
-                  placeholder="+1 234 567 8900" 
+                  placeholder="e.g. +1 234 567 8900" 
                   value={formData.guardianPhone}
                   onChange={(e) => setFormData({...formData, guardianPhone: e.target.value})}
                 />
@@ -413,6 +448,14 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                   placeholder="e.g. 1234567890" 
                   value={formData.parent_phone}
                   onChange={(e) => setFormData({...formData, parent_phone: e.target.value})}
+                />
+              </SC.InputGroup>
+              <SC.InputGroup style={{ gridColumn: 'span 2' }}>
+                <SC.Label>Full Residential Address</SC.Label>
+                <SC.Input 
+                  placeholder="e.g. 123 Academic Street, Education City" 
+                  value={formData.guardianAddress}
+                  onChange={(e) => setFormData({...formData, guardianAddress: e.target.value})}
                 />
               </SC.InputGroup>
             </SC.InputsGrid>
@@ -431,11 +474,11 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 <SC.ReviewValue>{formData.firstName} {formData.lastName}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
-                <SC.ReviewLabel>Grade</SC.ReviewLabel>
-                <SC.ReviewValue>{selectedGrade}</SC.ReviewValue>
+                <SC.ReviewLabel>Grade & Section</SC.ReviewLabel>
+                <SC.ReviewValue>{selectedGrade} - {formData.section}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
-                <SC.ReviewLabel>DOB</SC.ReviewLabel>
+                <SC.ReviewLabel>Date of Birth</SC.ReviewLabel>
                 <SC.ReviewValue>{formData.dob}</SC.ReviewValue>
               </SC.ReviewItem>
                <SC.ReviewItem>
@@ -443,12 +486,20 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 <SC.ReviewValue>{formData.id}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
-                <SC.ReviewLabel>Student Type</SC.ReviewLabel>
-                <SC.ReviewValue>{formData.studentType}</SC.ReviewValue>
+                <SC.ReviewLabel>Guardian</SC.ReviewLabel>
+                <SC.ReviewValue>{formData.guardianName} ({formData.relation})</SC.ReviewValue>
+              </SC.ReviewItem>
+              <SC.ReviewItem>
+                <SC.ReviewLabel>Contact</SC.ReviewLabel>
+                <SC.ReviewValue>{formData.guardianPhone}</SC.ReviewValue>
+              </SC.ReviewItem>
+              <SC.ReviewItem style={{ gridColumn: 'span 2' }}>
+                <SC.ReviewLabel>Address</SC.ReviewLabel>
+                <SC.ReviewValue>{formData.guardianAddress}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Total Monthly Fee</SC.ReviewLabel>
-                <SC.ReviewValue style={{ color: '#4F46E5', fontWeight: 900 }}>${totalFee.toLocaleString()}</SC.ReviewValue>
+                <SC.ReviewValue style={{ color: '#4F46E5', fontWeight: 900, fontSize: '1.25rem' }}>₹{totalFee.toLocaleString()}</SC.ReviewValue>
               </SC.ReviewItem>
             </SC.ReviewGrid>
 

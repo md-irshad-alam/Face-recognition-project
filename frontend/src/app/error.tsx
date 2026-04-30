@@ -168,7 +168,7 @@ export default function GlobalError({
     <Container>
       <Nav>
         <Logo>
-          The <span>Academic Architect</span>
+          VISIO
         </Logo>
         <RiQuestionMark size={24} color="#64748B" />
       </Nav>
@@ -215,7 +215,7 @@ export default function GlobalError({
       </SupportGrid>
 
       <footer style={{ marginTop: '80px', display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: '900px' }}>
-        <p style={{ color: '#94A3B8', fontSize: '0.75rem' }}>© 2024 Lumina Academy. All systems operational except this one.</p>
+        <p style={{ color: '#94A3B8', fontSize: '0.75rem' }}>© 2024 VISIO. All systems operational except this one.</p>
         <div style={{ display: 'flex', gap: '24px' }}>
           <span style={{ color: '#94A3B8', fontSize: '0.75rem' }}>Privacy Architecture</span>
           <span style={{ color: '#94A3B8', fontSize: '0.75rem' }}>Service Protocols</span>

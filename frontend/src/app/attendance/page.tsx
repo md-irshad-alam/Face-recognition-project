@@ -66,6 +66,7 @@ const API_URL = 'http://localhost:8000';
 
 export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'devices'>('attendance');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const queryClient = useQueryClient();
   
@@ -82,16 +83,15 @@ export default function AttendancePage() {
     }
   });
 
-  // Initialize selected classes when data arrives
+  // Initialize temp classes when data arrives
   useEffect(() => {
-    if (allClasses.length > 0 && selectedClasses.length === 0) {
-      setSelectedClasses(allClasses);
+    if (allClasses.length > 0 && tempClasses.length === 0) {
       setTempClasses(allClasses);
     }
   }, [allClasses]);
 
   const { data: attendanceData, isLoading: isAttendanceLoading } = useAttendance(
-    selectedClasses.length === allClasses.length ? undefined : (selectedClasses.length === 0 ? '__NONE__' : selectedClasses.join(','))
+    selectedClasses.length === 0 ? undefined : selectedClasses.join(',')
   );
   const { data: devicesData } = useDevices();
   const { events: logs, addEvent } = useAttendanceStore();
@@ -99,6 +99,13 @@ export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [toggles, setToggles] = useState<Record<string, boolean>>({});
   const [wsStatus, setWsStatus] = useState<'connecting' | 'live' | 'offline'>('connecting');
+
+  // Sync temp classes when modal opens
+  useEffect(() => {
+    if (isFilterOpen) {
+      setTempClasses(selectedClasses.length === 0 ? allClasses : [...selectedClasses]);
+    }
+  }, [isFilterOpen, selectedClasses, allClasses]);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -109,80 +116,90 @@ export default function AttendancePage() {
     }
     
     // Use a small delay before connecting to ensure clean state
-    setTimeout(() => {
-      setWsStatus('connecting');
-      const ws = new WebSocket(WS_URL);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setWsStatus('live');
-        console.log('[WS] Connected to attendance stream');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'attendance_event') {
-            const data = msg.data;
-            const timeStr = new Date(data.timestamp ?? Date.now()).toLocaleTimeString([], { 
-              hour: '2-digit', minute: '2-digit', second: '2-digit' 
-            });
-
-            if (data.status === 'success') {
-              // Add to store (persisted)
-              addEvent({
-                type: 'Scan Success',
-                msg: `Verified ${data.student_name}`,
-                time: timeStr,
-                device: data.scanner_name ?? 'Mobile',
-                status: 'success',
-                student_name: data.student_name
+      setTimeout(() => {
+        setWsStatus('connecting');
+        const ws = new WebSocket(WS_URL);
+        wsRef.current = ws;
+  
+        ws.onopen = () => {
+          setWsStatus('live');
+          console.log('[WS] Connected to attendance stream');
+          setIsRefreshing(false); // Stop animation on connect
+        };
+  
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'attendance_event') {
+              const data = msg.data;
+              const timeStr = new Date(data.timestamp ?? Date.now()).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit', second: '2-digit' 
               });
-
-              // Refresh React Query to show all marked students
-              queryClient.invalidateQueries({ queryKey: ['attendance'] });
-              
-              toast.success(`✓ ${data.student_name} via ${data.scanner_name ?? 'App'}`);
-            } else {
-              // Add to store (persisted)
-              addEvent({
-                type: 'Scan Failure',
-                msg: `${data.message ?? 'Unknown face'}`,
-                time: timeStr,
-                device: data.scanner_name ?? data.device_id ?? 'Scanner',
-                status: 'fail'
-              });
-
-              toast.error(`✗ ${data.message ?? 'Scan failed'} on ${data.scanner_name ?? 'device'}`);
+  
+              if (data.status === 'success') {
+                // Add to store (persisted)
+                addEvent({
+                  type: 'Scan Success',
+                  msg: `Verified ${data.student_name}`,
+                  time: timeStr,
+                  device: data.scanner_name ?? 'Mobile',
+                  status: 'success',
+                  student_name: data.student_name
+                });
+  
+                // Refresh React Query to show all marked students
+                queryClient.invalidateQueries({ queryKey: ['attendance'] });
+                
+                toast.success(`✓ ${data.student_name} via ${data.scanner_name ?? 'App'}`);
+              } else {
+                // Add to store (persisted)
+                addEvent({
+                  type: 'Scan Failure',
+                  msg: `${data.message ?? 'Unknown face'}`,
+                  time: timeStr,
+                  device: data.scanner_name ?? data.device_id ?? 'Scanner',
+                  status: 'fail'
+                });
+  
+                toast.error(`✗ ${data.message ?? 'Scan failed'} on ${data.scanner_name ?? 'device'}`);
+              }
             }
+          } catch (e) {
+            console.error('[WS] Parse error:', e);
           }
-        } catch (e) {
-          console.error('[WS] Parse error:', e);
-        }
-      };
+        };
+  
+        ws.onerror = (e) => {
+          console.error('[WS] Connection error', e);
+          setWsStatus('offline');
+          setIsRefreshing(false);
+        };
+  
+        ws.onclose = () => {
+          setWsStatus('offline');
+          setIsRefreshing(false);
+        };
+      }, 100);
+    }, [addEvent, queryClient]);
+  
+    const handleRefresh = () => {
+      setIsRefreshing(true);
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+      connectWs();
+      setTimeout(() => setIsRefreshing(false), 2000); // Fallback to stop after 2s
+    };
 
-      ws.onerror = (e) => {
-        console.error('[WS] Connection error', e);
-        setWsStatus('offline');
-      };
-
-      ws.onclose = () => {
-        setWsStatus('offline');
-      };
-    }, 100);
-  }, []);
-
-  // Sync React Query data to local state for filtering/UI
   useEffect(() => {
     if (attendanceData) {
       const mapped: AttendanceRecord[] = attendanceData.map((a: any) => ({
-        id: a.student_id ?? a.id ?? '—',
-        name: a.student_name ?? a.name ?? 'Unknown',
-        status: 'Present',
+        id: a.student_id || a.id || '—',
+        name: a.name || a.student_name || 'Unknown Student',
+        status: (a.status as any) || 'Present',
         time: a.check_in_time || '—',
-        subtext: `${a.class_name ?? a.program ?? ''} ${a.section ?? ''}`.trim() || 'Mobile Scan',
+        subtext: (a.program || a.class_name || 'N/A') + (a.section ? ` • Section ${a.section}` : ''),
         avatarBg: randomColor(),
-        className: a.class_name ?? a.program ?? 'Unknown',
+        className: a.program || a.class_name || 'Unknown',
       }));
       setRecords(mapped);
     }
@@ -227,7 +244,9 @@ export default function AttendancePage() {
     toast.success("Institutional logs filtered.");
   };
 
-  const filteredRecords = records.filter(r => selectedClasses.includes(r.className));
+  // Since the backend already filters based on selectedClasses, we can use records directly.
+  // This ensures that live updates via WebSocket (which trigger a refetch) are correctly displayed.
+  const filteredRecords = records;
 
   return (
     <SC.PageWrapper>
@@ -259,9 +278,11 @@ export default function AttendancePage() {
                   {wsStatus === 'live' ? '● Live' : wsStatus === 'connecting' ? '○ Connecting…' : '✕ Offline'}
                 </div>
                 <div className="cam-name">Mobile Attendance Stream</div>
-                <div className="sync">{records.length} records today</div>
+                <div className="sync">{filteredRecords.length} records in view</div>
               </SC.StatusInfo>
-              <SC.RefreshBtn onClick={connectWs}><RiRefreshLine size={20} /></SC.RefreshBtn>
+              <SC.RefreshBtn $isRefreshing={isRefreshing} onClick={handleRefresh}>
+                <RiRefreshLine size={20} />
+              </SC.RefreshBtn>
             </SC.CameraStatus>
           </SC.HeaderRow>
 
@@ -270,16 +291,16 @@ export default function AttendancePage() {
             <SC.FilterGroup>
               <SC.SelectWrapper>
                 <RiCalendarCheckLine size={20} />
-                <span>Today, Oct 24, 2023</span>
+                <span>Today, {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 <RiArrowDownSLine size={18} style={{ marginLeft: 'auto' }} />
               </SC.SelectWrapper>
               <SC.SelectWrapper onClick={() => setIsFilterOpen(true)}>
                 <RiFilter3Line size={20} />
-                <span>{selectedClasses.length === 0 ? 'No Classes' : selectedClasses.length === allClasses.length ? 'All Classes' : `${selectedClasses.length} Selected`}</span>
+                <span>{selectedClasses.length === 0 ? 'All Institutional Classes' : `${selectedClasses.length} Classes Selected`}</span>
                 <RiArrowDownSLine size={18} style={{ marginLeft: 'auto' }} />
               </SC.SelectWrapper>
             </SC.FilterGroup>
-            <SC.PDFButton><RiFileDownloadLine size={20} /><span>Export PDF</span></SC.PDFButton>
+            {/* Export button removed as requested */}
           </SC.FilterSection>
 
           {/* Attendance Table */}
@@ -326,8 +347,9 @@ export default function AttendancePage() {
               ))}
             </SC.ClassGrid>
             <SC.ModalActions>
-              <SC.ActionBtn $variant="reset" onClick={() => setTempClasses([...allClasses])}>Reset</SC.ActionBtn>
-              <SC.ActionBtn $variant="primary" onClick={handleApplyFilters}>Apply</SC.ActionBtn>
+              <SC.ActionBtn $variant="reset" onClick={() => setTempClasses([])}>Deselect All</SC.ActionBtn>
+              <SC.ActionBtn $variant="secondary" onClick={() => setTempClasses([...allClasses])}>Select All</SC.ActionBtn>
+              <SC.ActionBtn $variant="primary" onClick={handleApplyFilters}>Apply Filters</SC.ActionBtn>
             </SC.ModalActions>
           </Modal>
         </>
@@ -337,7 +359,7 @@ export default function AttendancePage() {
           <SC.DashboardHeader>
             <SC.TitleGroup>
               <h1>Mobile Sync Dashboard</h1>
-              <SC.PageSubtitle>Monitoring 24 connected edge nodes across the campus.</SC.PageSubtitle>
+              <SC.PageSubtitle>Monitoring {devices.length} connected edge nodes across the campus.</SC.PageSubtitle>
             </SC.TitleGroup>
             <SC.HeaderActions>
               <SC.SyncButton onClick={() => toast.success("Orchestrating global synchronization...")}>
@@ -354,8 +376,8 @@ export default function AttendancePage() {
               <SC.SummaryRow>
                 <h3>Connected Devices</h3>
                 <SC.NodeStatusGroup>
-                  <SC.NodeBadge>Online: 22</SC.NodeBadge>
-                  <SC.NodeBadge $offline>Offline: 2</SC.NodeBadge>
+                  <SC.NodeBadge>Online: {devices.filter(d => d.status === 'active').length}</SC.NodeBadge>
+                  <SC.NodeBadge $offline>Offline: {devices.filter(d => d.status === 'offline').length}</SC.NodeBadge>
                 </SC.NodeStatusGroup>
               </SC.SummaryRow>
 
@@ -403,7 +425,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="side-panel">
-              <SC.HealthCard>
+              {/* <SC.HealthCard>
                 <span>Network Health</span>
                 <h2>99.8%</h2>
                 <SC.EfficiencyBar>
@@ -414,7 +436,7 @@ export default function AttendancePage() {
                   <span>Node Latency</span>
                   <strong>14ms</strong>
                 </div>
-              </SC.HealthCard>
+              </SC.HealthCard> */}
 
               <SC.LogsCard>
                 <div className="header">

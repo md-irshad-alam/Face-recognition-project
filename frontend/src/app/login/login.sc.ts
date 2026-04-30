@@ -1,7 +1,8 @@
+import Link from 'next/link';
 import styled from 'styled-components';
 
 export const PageWrapper = styled.div`
-  min-height: 100vh;
+  // min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: #F8FAFC;
@@ -30,15 +31,18 @@ export const NavLinks = styled.div`
   }
 `;
 
-export const NavLink = styled.a`
+export const NavLink = styled(Link)`
   text-decoration: none;
-  color: #64748B;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  transition: color 0.2s;
+  color: #1E293B;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  border-radius: 8px;
 
   &:hover {
     color: #4F46E5;
+    background: #F1F5F9;
   }
 `;
 
@@ -87,46 +91,81 @@ export const LoginCard = styled.div`
 
 /* — Left Panel —————————————————————————————— */
 export const HeroPanel = styled.div`
-  flex: 1;
-  background-color: #F1F5F9;
-  padding: 64px;
+  flex: 1.1;
+  background-color: #F8FAFC;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%);
+  overflow: hidden;
 
   @media (max-width: 900px) {
     display: none;
   }
 `;
 
-export const HeroTag = styled.span`
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #4338CA;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 24px;
-  display: block;
+export const IllustrationWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+
+  img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+  }
 `;
 
-export const HeroTitle = styled.h1`
-  font-size: 3rem;
+export const BlogSection = styled.div`
+  max-width: 440px;
+`;
+
+export const BlogTag = styled.span`
+  font-size: 0.75rem;
   font-weight: 800;
+  color: #6366F1;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: block;
+  margin-bottom: 16px;
+`;
+
+export const BlogTitle = styled.h1`
+  font-size: 2.5rem;
+  font-weight: 900;
   color: #0F172A;
-  line-height: 1.1;
-  margin-bottom: 40px;
+  line-height: 1.2;
+  margin-bottom: 24px;
   letter-spacing: -0.04em;
 `;
 
-export const HeroDescription = styled.p`
-  font-size: 1.125rem;
-  color: #64748B;
-  line-height: 1.6;
-  max-width: 380px;
+export const BlogContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+`;
+
+export const BlogPara = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0;
+  }
+
+  p {
+    font-size: 0.9375rem;
+    color: #64748B;
+    line-height: 1.6;
+    margin: 0;
+  }
 `;
 
 export const QuoteCard = styled.div`

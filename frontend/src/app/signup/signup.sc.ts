@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import styled from 'styled-components';
 
 export const PageWrapper = styled.div`
@@ -37,15 +38,18 @@ export const NavLinks = styled.div`
   }
 `;
 
-export const NavLink = styled.a`
+export const NavLink = styled(Link)`
   text-decoration: none;
-  color: #64748B;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  transition: color 0.2s;
+  color: #1E293B;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  padding: 8px 16px;
+  border-radius: 8px;
 
   &:hover {
     color: #4F46E5;
+    background: #F1F5F9;
   }
 `;
 
@@ -66,130 +70,81 @@ export const MainContainer = styled.main`
 
 /* — Left Column —————————————————————————————— */
 export const HeroSection = styled.div`
-  flex: 1;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
-  padding: 80px;
+  flex: 1.1;
+  background-color: #F8FAFC;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   position: relative;
   overflow: hidden;
 
   @media (max-width: 1024px) {
-    padding: 60px 24px;
-    order: 2;
+    display: none;
   }
 `;
 
-export const HeroContent = styled.div`
-  max-width: 480px;
+export const IllustrationWrapper = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+
+  img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+  }
 `;
 
-export const HeroTitle = styled.h1`
-  font-size: 3.5rem;
+export const BlogSection = styled.div`
+  max-width: 440px;
+`;
+
+export const BlogTag = styled.span`
+  font-size: 0.75rem;
   font-weight: 800;
+  color: #6366F1;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: block;
+  margin-bottom: 16px;
+`;
+
+export const BlogTitle = styled.h1`
+  font-size: 2.5rem;
+  font-weight: 900;
   color: #0F172A;
-  line-height: 1.1;
+  line-height: 1.2;
   margin-bottom: 24px;
   letter-spacing: -0.04em;
 `;
 
-export const HeroSubtitle = styled.p`
-  font-size: 1.25rem;
-  color: #64748B;
-  line-height: 1.6;
-  margin-bottom: 48px;
-`;
-
-export const FeatureList = styled.div`
+export const BlogContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
 `;
 
-export const FeatureItem = styled.div`
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-`;
-
-export const FeatureIcon = styled.div<{ $bg: string; $color: string }>`
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: ${props => props.$bg};
-  color: ${props => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
-`;
-
-export const FeatureText = styled.div`
+export const BlogPara = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-`;
+  gap: 8px;
 
-export const FeatureTitle = styled.h3`
-  font-size: 1.0625rem;
-  font-weight: 800;
-  color: #1E293B;
-  margin: 0;
-`;
+  h3 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0;
+  }
 
-export const FeatureDesc = styled.p`
-  font-size: 0.9375rem;
-  color: #64748B;
-  margin: 0;
-  line-height: 1.5;
-`;
-
-export const TestimonialCard = styled.div`
-  background: white;
-  padding: 32px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-  margin-top: 60px;
-  max-width: 400px;
-`;
-
-export const TestimonialText = styled.p`
-  font-size: 1rem;
-  font-style: italic;
-  color: #475569;
-  line-height: 1.6;
-  margin-bottom: 20px;
-`;
-
-export const UserInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-
-export const Avatar = styled.img`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-`;
-
-export const UserDetail = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-export const UserName = styled.span`
-  font-weight: 800;
-  color: #1E293B;
-  font-size: 0.875rem;
-`;
-
-export const UserRole = styled.span`
-  color: #94A3B8;
-  font-size: 0.75rem;
+  p {
+    font-size: 0.9375rem;
+    color: #64748B;
+    line-height: 1.6;
+    margin: 0;
+  }
 `;
 
 /* — Right Column (Form) —————————————————————— */

@@ -2,10 +2,14 @@ from celery import Celery
 import os
 import requests
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Celery
 # Note: In production, use a secure broker like Redis or RabbitMQ
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6380/0")
 celery_app = Celery("tasks", broker=CELERY_BROKER_URL)
 
 # SMS Gateway Config (Msg91 example)
@@ -13,7 +17,7 @@ MSG91_AUTH_KEY = os.getenv("MSG91_AUTH_KEY")
 MSG91_SENDER_ID = os.getenv("MSG91_SENDER_ID", "SCHOOL")
 
 # WhatsApp Evolution API Config
-EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
+EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://127.0.0.1:8085")
 EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "your_api_key")
 EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "MainInstance")
 
@@ -36,12 +40,16 @@ def send_whatsapp_message(phone, message):
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
+        print(f"✅ WhatsApp message sent to {phone}")
         return response.json()
+    except requests.exceptions.ConnectionError:
+        print(f"❌ WhatsApp API Error: Could not connect to Evolution API at {EVOLUTION_API_URL}. Is Docker running?")
+        return {"status": "error", "message": "API Connection Refused"}
     except Exception as e:
-        print(f"WhatsApp API Error: {e}")
-        return False
+        print(f"❌ WhatsApp API Error: {e}")
+        return {"status": "error", "message": str(e)}
 
 @celery_app.task(name="broadcast_whatsapp_messages")
 def broadcast_whatsapp_messages(recipients_and_messages):

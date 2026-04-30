@@ -10,7 +10,12 @@ export const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
-  padding: 8px;
+  // padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    gap: 24px;
+  }
 `;
 
 export const Header = styled.div`
@@ -39,8 +44,12 @@ export const Header = styled.div`
 
 export const MainGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 440px;
   gap: 32px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const LeftColumn = styled.div`
@@ -54,6 +63,14 @@ export const SummaryRow = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const BalanceCard = styled.div<{ $color: string }>`
@@ -126,6 +143,12 @@ export const FormCard = styled.div`
   padding: 32px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.02);
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 640px) {
+    padding: 24px;
+  }
 `;
 
 export const FormTitle = styled.h2`
@@ -145,33 +168,41 @@ export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  width: 100%;
   
   label {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
     color: #94A3B8;
+    margin-left: 4px;
   }
 `;
 
 export const Select = styled.select`
-  height: 48px;
-  border-radius: 12px;
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
   border: 1px solid #E2E8F0;
   padding: 0 16px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #1E293B;
   background: #F8FAFC;
   outline: none;
   transition: all 0.2s;
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 18px;
 
   &:focus {
     border-color: #4F46E5;
-    background: #fff;
+    background-color: #fff;
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
   }
 `;
@@ -179,15 +210,21 @@ export const Select = styled.select`
 export const DateRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const Input = styled.input`
-  height: 48px;
-  border-radius: 12px;
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
   border: 1px solid #E2E8F0;
   padding: 0 16px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #1E293B;
   background: #F8FAFC;
@@ -202,12 +239,12 @@ export const Input = styled.input`
 `;
 
 export const Textarea = styled.textarea`
-  height: 100px;
-  width:100%;
-  border-radius: 12px;
+  height: 120px;
+  width: 100%;
+  border-radius: 16px;
   border: 1px solid #E2E8F0;
   padding: 16px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #1E293B;
   background: #F8FAFC;
@@ -224,21 +261,22 @@ export const Textarea = styled.textarea`
 
 export const SubmitBtn = styled.button`
   width: 100%;
-  height: 52px;
+  height: 56px;
   background: #4F46E5;
   color: #fff;
   border: none;
-  border-radius: 14px;
-  font-size: 0.9375rem;
-  font-weight: 700;
+  border-radius: 18px;
+  font-size: 1rem;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+  margin-top: 12px;
 
   &:hover {
     background: #4338CA;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+    box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3);
   }
   
   &:active {
@@ -253,6 +291,14 @@ export const TableSection = styled.div`
   padding: 32px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.03);
+  overflow-x: auto;
+  width: 100%;
+
+  @media (max-width: 640px) {
+    padding: 20px;
+    margin: 0 -8px;
+    border-radius: 16px;
+  }
 `;
 
 export const TableHeader = styled.div`
@@ -302,6 +348,7 @@ export const TableFilters = styled.div`
 export const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px;
 `;
 
 export const Th = styled.th`

@@ -17,6 +17,25 @@ async def send_reminder(request: ReminderRequest):
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
+        # Production Check: One message per student per hour (Cooldown)
+        from datetime import datetime, timedelta
+        last_sent = student.get('last_reminder_sent')
+        if last_sent:
+            # If last_sent is a string, parse it. If it's a datetime, use it.
+            if isinstance(last_sent, str):
+                last_sent_dt = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+            else:
+                last_sent_dt = last_sent
+            
+            cooldown_period = timedelta(hours=1)
+            if datetime.now() - last_sent_dt < cooldown_period:
+                diff = cooldown_period - (datetime.now() - last_sent_dt)
+                minutes_left = int(diff.total_seconds() // 60)
+                raise HTTPException(
+                    status_code=429, 
+                    detail=f"Reminder already sent recently. Please wait {minutes_left} minutes before sending again."
+                )
+
         phone = student.get('parent_phone') or student.get('phone')
         if not phone:
             raise HTTPException(status_code=400, detail="Parent phone not found")
@@ -30,8 +49,13 @@ async def send_reminder(request: ReminderRequest):
         
         # Send via WhatsApp (Task)
         send_whatsapp_message.delay(phone, message)
+        
+        # Update timestamp immediately to prevent race conditions
+        database.update_last_reminder_sent(request.student_id)
 
         return {"status": "success", "message": f"Reminder sent to {student['name']}'s parent."}
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Reminder Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -78,16 +102,28 @@ async def mark_payment_done(request: dict):
         conn = database.create_connection()
         cursor = conn.cursor()
         
+        from datetime import datetime
+        # Set last_payment_date to the 1st of the current month (meaning they've paid for this month)
+        current_month_start = datetime.now().replace(day=1).strftime('%Y-%m-%d')
+        
         # Construct placeholders for IN clause
         placeholders = ', '.join(['%s'] * len(student_ids))
-        query = f"UPDATE students SET status = 'Paid' WHERE id IN ({placeholders})"
+        # Update both the date anchor and clear the opening balance
+        query = f"""
+            UPDATE students 
+            SET last_payment_date = %s, 
+                opening_balance = 0,
+                status = 'Paid'
+            WHERE id IN ({placeholders})
+        """
         
-        cursor.execute(query, tuple(student_ids))
+        params = [current_month_start] + student_ids
+        cursor.execute(query, params)
         conn.commit()
         
         cursor.close()
         conn.close()
-        return {"status": "success", "message": f"Payment marked as done for {len(student_ids)} students."}
+        return {"status": "success", "message": f"Payment cleared for {len(student_ids)} students."}
     except Exception as e:
         print(f"Payment Update Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

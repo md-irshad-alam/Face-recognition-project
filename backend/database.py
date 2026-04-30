@@ -75,6 +75,18 @@ def get_student_by_id(student_id):
     conn.close()
     return row
 
+def update_last_reminder_sent(student_id):
+    conn = create_connection()
+    if not conn: return
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE students SET last_reminder_sent = CURRENT_TIMESTAMP WHERE id = %s", (student_id,))
+        conn.commit()
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
 def delete_student(student_id):
     conn = create_connection()
     if not conn: return False
@@ -226,11 +238,12 @@ def get_dashboard_stats():
             cursor.close()
             conn.close()
 
-def get_todays_attendance(class_name=None, section=None):
+def get_todays_attendance(class_name=None):
     conn = create_connection()
     if not conn: return []
     try:
         cursor = conn.cursor(dictionary=True)
+        # Filter by today's date to show daily attendance
         query = """
             SELECT s.id as student_id, s.name, s.class_name as program, s.section, s.photo_url, a.check_in_time, a.status, a.date
             FROM attendance a 
@@ -239,6 +252,8 @@ def get_todays_attendance(class_name=None, section=None):
         """
         params = []
         if class_name:
+            if class_name == "__NONE__":
+                return []
             if "," in class_name:
                 classes = [c.strip() for c in class_name.split(",")]
                 placeholders = ",".join(["%s"] * len(classes))
@@ -247,19 +262,27 @@ def get_todays_attendance(class_name=None, section=None):
             else:
                 query += " AND s.class_name = %s"
                 params.append(class_name)
-        if section:
-            query += " AND s.section = %s"
-            params.append(section)
             
-        query += " ORDER BY a.check_in_time DESC"
+        query += " ORDER BY a.date DESC, a.check_in_time DESC"
         
         cursor.execute(query, tuple(params))
         rows = cursor.fetchall()
         for row in rows:
-            check_in = row['check_in_time']
-            total_seconds = check_in.total_seconds()
-            hours = int(total_seconds // 3600); minutes = int((total_seconds % 3600) // 60); seconds = int(total_seconds % 60)
-            row['check_in_time'] = f"{hours:02}:{minutes:02}:{seconds:02}"
+            # Format time for display
+            if row['check_in_time']:
+                check_in = row['check_in_time']
+                if hasattr(check_in, 'total_seconds'):
+                    total_seconds = check_in.total_seconds()
+                    hours = int(total_seconds // 3600); minutes = int((total_seconds % 3600) // 60); seconds = int(total_seconds % 60)
+                    row['check_in_time'] = f"{hours:02}:{minutes:02}:{seconds:02}"
+                else:
+                    row['check_in_time'] = str(check_in)
+            
+            # Add date to the display if it's not today
+            if row['date']:
+                date_str = row['date'].strftime('%Y-%m-%d')
+                row['check_in_time'] = f"{date_str} {row['check_in_time']}"
+                
             row['remarks'] = 'Present'
         return rows
     except Exception as e:
@@ -652,23 +675,47 @@ def update_payment_status(gateway_link_id, status, payment_id=None):
             conn.close()
 
 def get_all_students_for_fees():
-    import random
+    from datetime import datetime
     conn = create_connection()
     if not conn: return []
     try:
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, name, status, total_monthly_fee, student_type FROM students")
+        cursor.execute("SELECT id, name, status, total_monthly_fee, student_type, last_payment_date, opening_balance FROM students")
         students = cursor.fetchall()
         
+        today = datetime.now()
         results = []
         for s in students:
+            lpd = s['last_payment_date']
+            monthly_fee = float(s['total_monthly_fee'] or 0)
+            opening_bal = float(s['opening_balance'] or 0)
+            
+            # Calculate months overdue (Arrears)
+            if lpd:
+                # Difference in months between today and last paid date
+                # e.g. lpd is Sep, today is Oct -> 1 month arrears (Oct)
+                months_overdue = (today.year - lpd.year) * 12 + today.month - lpd.month
+                arrears = max(0, months_overdue) * monthly_fee
+            else:
+                arrears = monthly_fee # Assume at least current month is due
+                months_overdue = 1
+            
+            total_due = arrears + opening_bal
+            
+            # Auto-calculate status
+            status = 'Paid' if total_due <= 0 else ('Overdue' if arrears > monthly_fee else 'Unpaid')
+
             results.append({
                 "id": s['id'],
                 "name": s['name'],
                 "type": s['student_type'] or 'Regular',
-                "date": "Oct 2023", 
-                "amount": f"₹{float(s['total_monthly_fee'] or 0):,.0f}",
-                "status": s['status'] or 'Unpaid'
+                "last_paid": lpd.strftime('%b %Y') if lpd else 'N/A',
+                "monthly_fee": monthly_fee,
+                "arrears": arrears,
+                "opening_balance": opening_bal,
+                "total_due": total_due,
+                "status": status,
+                "months_pending": max(0, months_overdue)
             })
         return results
     except Exception as e:

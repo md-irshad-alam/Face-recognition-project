@@ -3,8 +3,19 @@ import styled from 'styled-components';
 export const Container = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+  height: 100vh;
+  padding: 2rem;
+  background: #f8fafc;
+  overflow: hidden;
   animation: fadeIn 0.3s ease-in-out;
+
+  @media (max-width: 1024px) {
+    height: auto;
+    min-height: 100vh;
+    padding: 1.5rem;
+    overflow: visible;
+  }
 
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
@@ -37,12 +48,18 @@ export const Subtitle = styled.p`
 export const StepperContainer = styled.div`
   width: 100%;
   background: white;
-  padding: 24px;
+  padding: 20px 24px;
   border-radius: 16px;
   border: 1px solid ${props => props.theme.colors.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    padding: 16px;
+    gap: 12px;
+  }
 `;
 
 export const Step = styled.div<{ $active?: boolean; $completed?: boolean }>`
@@ -85,10 +102,28 @@ export const FormCard = styled.div`
   background: white;
   border-radius: 24px;
   border: 1px solid ${props => props.theme.colors.border};
-  padding: 40px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
+  flex: 1;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 20px;
+    gap: 24px;
+  }
 `;
 
 export const SectionTitle = styled.h3`
@@ -240,8 +275,17 @@ export const ActionFooter = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
-  min-height: 56px;
+  margin-top: 8px;
+  min-height: 64px;
+  background: white;
+  padding: 16px 32px;
+  border-radius: 16px;
+  border: 1px solid ${props => props.theme.colors.border};
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    padding: 12px 20px;
+  }
 `;
 
 export const BackButton = styled.button`
