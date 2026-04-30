@@ -26,13 +26,24 @@ export const useAttendance = (class_name?: string) => {
   });
 };
 
+export interface Device {
+  device_id: string;
+  device_name?: string;
+  device_type?: string;
+  status: string;
+  battery_level?: number;
+  ip_address?: string;
+  last_sync?: string;
+}
+
 export const useDevices = () => {
-  return useQuery({
+  return useQuery<Device[]>({
     queryKey: ['devices'],
     queryFn: async () => {
-      const response = await api.get('/devices');
+      const response = await api.get<Device[]>('/devices');
       return response;
     },
     refetchInterval: 10000, // Faster refetch for devices
   });
 };
+

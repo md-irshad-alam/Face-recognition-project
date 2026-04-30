@@ -15,6 +15,7 @@ export interface Teacher {
   status?: 'active' | 'on_leave' | 'inactive'
   photo_url?: string
   assigned_classes?: string[]
+  created_at?: string
 }
 
 export function useTeachers() {

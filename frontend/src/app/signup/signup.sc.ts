@@ -254,7 +254,7 @@ export const Checkbox = styled.input`
   cursor: pointer;
 `;
 
-export const CheckboxLabel = styled.span`
+export const CheckboxLabel = styled.label`
   font-size: 0.9375rem;
   color: #64748B;
   line-height: 1.5;

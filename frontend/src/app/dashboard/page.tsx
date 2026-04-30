@@ -11,6 +11,7 @@ import {
   LineElement, BarElement, Title as ChartTitle, Tooltip, 
   Legend, ArcElement, Filler
 } from 'chart.js';
+// @ts-ignore
 import { Line, Doughnut } from 'react-chartjs-2';
 import { toast } from 'react-hot-toast';
 import { useDashboard } from '@/hooks/useDashboard';

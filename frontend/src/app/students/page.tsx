@@ -91,7 +91,7 @@ export default function StudentsPage() {
   }
 
   const handleToggleHold = async (id: string, currentStatus: boolean) => {
-    const success = await toggleHold(id)
+    const success = await toggleHold(id, !currentStatus)
     if (success) {
       toast.success(currentStatus ? 'Student reinstated.' : 'Student placed on administrative hold.')
       fetchStudents()
@@ -210,7 +210,7 @@ export default function StudentsPage() {
                           <SC.ActionButton 
                             $variant={student.is_on_hold ? 'success' : 'warning'} 
                             title="Toggle Hold"
-                            onClick={() => handleToggleHold(student.id, student.is_on_hold)}
+                            onClick={() => handleToggleHold(student.id, !!student.is_on_hold)}
                           >
                             {student.is_on_hold ? <RiCheckLine /> : <RiCloseLine />}
                           </SC.ActionButton>
