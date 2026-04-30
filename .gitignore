@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.env.local
+.env.*.local
+venv/
+ENV/
+env/
+.venv/
+
+# Node.js
+node_modules/
+.next/
+dist/
+build/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Project Specific
+backend/faces/
+backend/qr_code.png
+backend/static/uploads/
+frontend/public/uploads/
+
+# Docker
+.dockerignore
