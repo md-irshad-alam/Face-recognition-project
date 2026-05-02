@@ -55,11 +55,16 @@ def setup():
                 print("📸 QR CODE GENERATED!")
                 print("="*50)
                 print(f"Saved as: qr_code.png")
-                print(f"\n👉 OPEN 'qr_code.png' AND SCAN IT.")
+                print(f"\n👉 Transfer 'qr_code.png' to your computer to scan it,")
+                print(f"   or view it via your web browser if the static path is configured.")
                 print("="*50)
                 
-                # Open automatically on Mac
-                os.system("open qr_code.png")
+                # Only try to open automatically if on Mac with a display
+                if os.name == 'posix' and os.uname().sysname == 'Darwin':
+                    try:
+                        os.system("open qr_code.png")
+                    except:
+                        pass
                 return
             else:
                 print("⏳ Not ready yet, waiting 5 seconds...")

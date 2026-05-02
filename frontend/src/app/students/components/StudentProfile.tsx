@@ -120,6 +120,10 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ studentId, onBack, onEd
                   <span>{student.section || 'A'}</span>
                 </SC.InfoItem>
                 <SC.InfoItem>
+                  <label>Student Type</label>
+                  <span>{(student as any).student_type || 'Regular'}</span>
+                </SC.InfoItem>
+                <SC.InfoItem>
                   <label>Status</label>
                   <span className="status-pill">{student.is_on_hold ? 'On Hold' : 'Active'}</span>
                 </SC.InfoItem>

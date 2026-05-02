@@ -163,6 +163,7 @@ export default function StudentsPage() {
                   <SC.Th>Student</SC.Th>
                   <SC.Th>Grade Level</SC.Th>
                   <SC.Th>Section</SC.Th>
+                  <SC.Th>Type</SC.Th>
                   <SC.Th>Status</SC.Th>
                   <SC.Th style={{ textAlign: 'right' }}>Actions</SC.Th>
                 </tr>
@@ -197,6 +198,18 @@ export default function StudentsPage() {
                         <SC.GradePill>{student.class_name}</SC.GradePill>
                       </SC.Td>
                       <SC.Td style={{ fontWeight: 600, color: '#475569' }}>Section {student.section}</SC.Td>
+                      <SC.Td>
+                        <span style={{ 
+                          fontSize: '0.75rem', 
+                          fontWeight: 700, 
+                          color: student.student_type === 'Hosteler' ? '#7C3AED' : (student.student_type === 'Fee' ? '#059669' : '#64748B'),
+                          background: student.student_type === 'Hosteler' ? '#F5F3FF' : (student.student_type === 'Fee' ? '#ECFDF5' : '#F1F5F9'),
+                          padding: '4px 8px',
+                          borderRadius: '6px'
+                        }}>
+                          {student.student_type || 'Regular'}
+                        </span>
+                      </SC.Td>
                       <SC.Td>
                         <SC.StatusBadge $onHold={student.is_on_hold}>
                           {student.is_on_hold ? 'On Hold' : 'Enrolled'}

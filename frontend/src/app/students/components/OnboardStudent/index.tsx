@@ -318,6 +318,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 >
                   <option value="Regular">Regular</option>
                   <option value="Hosteler">Hosteler</option>
+                  <option value="Fee">Fee</option>
                 </SC.Select>
               </SC.InputGroup>
 
@@ -476,6 +477,10 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
               <SC.ReviewItem>
                 <SC.ReviewLabel>Grade & Section</SC.ReviewLabel>
                 <SC.ReviewValue>{selectedGrade} - {formData.section}</SC.ReviewValue>
+              </SC.ReviewItem>
+              <SC.ReviewItem>
+                <SC.ReviewLabel>Student Type</SC.ReviewLabel>
+                <SC.ReviewValue>{formData.studentType}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Date of Birth</SC.ReviewLabel>

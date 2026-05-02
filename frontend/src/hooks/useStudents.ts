@@ -13,6 +13,7 @@ export interface Student {
   admission_date?: string
   photo_url?: string
   is_on_hold?: boolean
+  student_type?: string
 }
 
 export function useStudents() {

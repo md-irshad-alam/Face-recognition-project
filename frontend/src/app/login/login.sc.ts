@@ -2,10 +2,10 @@ import Link from 'next/link';
 import styled from 'styled-components';
 
 export const PageWrapper = styled.div`
-  // min-height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #F8FAFC;
+  background-color: #FFFFFF;
   font-family: 'Inter', sans-serif;
 `;
 
@@ -13,12 +13,19 @@ export const Navbar = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 80px;
-  background: transparent;
+  padding: 20px 80px;
+  background: white;
 
   @media (max-width: 768px) {
     padding: 20px 24px;
   }
+`;
+
+export const Logo = styled.div`
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.02em;
 `;
 
 export const NavLinks = styled.div`
@@ -26,7 +33,7 @@ export const NavLinks = styled.div`
   gap: 32px;
   align-items: center;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     display: none;
   }
 `;
@@ -48,49 +55,21 @@ export const NavLink = styled(Link)`
 
 export const NavActions = styled.div`
   display: flex;
+  gap: 16px;
   align-items: center;
-  gap: 24px;
 `;
 
-export const Logo = styled.div`
+export const MainContainer = styled.main`
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0F172A;
-  letter-spacing: -0.02em;
-
-  svg {
-    color: #4F46E5;
-  }
-`;
-
-export const MainContent = styled.main`
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 24px;
-`;
 
-export const LoginCard = styled.div`
-  width: 100%;
-  max-width: 1040px;
-  background: white;
-  border-radius: 32px;
-  display: flex;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     flex-direction: column;
-    max-width: 480px;
   }
 `;
 
-/* — Left Panel —————————————————————————————— */
-export const HeroPanel = styled.div`
+/* — Left Column —————————————————————————————— */
+export const HeroSection = styled.div`
   flex: 1.1;
   background-color: #F8FAFC;
   display: flex;
@@ -99,7 +78,7 @@ export const HeroPanel = styled.div`
   position: relative;
   overflow: hidden;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     display: none;
   }
 `;
@@ -119,123 +98,24 @@ export const IllustrationWrapper = styled.div`
   }
 `;
 
-export const BlogSection = styled.div`
-  max-width: 440px;
-`;
-
-export const BlogTag = styled.span`
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #6366F1;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  display: block;
-  margin-bottom: 16px;
-`;
-
-export const BlogTitle = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 900;
-  color: #0F172A;
-  line-height: 1.2;
-  margin-bottom: 24px;
-  letter-spacing: -0.04em;
-`;
-
-export const BlogContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-`;
-
-export const BlogPara = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  h3 {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #1E293B;
-    margin: 0;
-  }
-
-  p {
-    font-size: 0.9375rem;
-    color: #64748B;
-    line-height: 1.6;
-    margin: 0;
-  }
-`;
-
-export const QuoteCard = styled.div`
-  background: white;
-  padding: 32px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-export const QuoteHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-
-export const QuoteIcon = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #4F46E5;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-export const QuoteAuthor = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-export const AuthorName = styled.span`
-  font-weight: 800;
-  color: #1E293B;
-  font-size: 0.8125rem;
-`;
-
-export const AuthorRole = styled.span`
-  color: #94A3B8;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-`;
-
-export const QuoteText = styled.p`
-  font-size: 0.9375rem;
-  font-style: italic;
-  color: #475569;
-  line-height: 1.6;
-  margin: 0;
-`;
-
-/* — Right Panel (Form) —————————————————————— */
-export const FormPanel = styled.div`
-  flex: 1;
-  padding: 64px 80px;
+/* — Right Column (Form) —————————————————————— */
+export const FormSection = styled.div`
+  flex: 1.2;
+  padding: 80px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
 
   @media (max-width: 1024px) {
-    padding: 64px 48px;
+    padding: 60px 24px;
+    order: 1;
   }
+`;
 
-  @media (max-width: 640px) {
-    padding: 48px 24px;
-  }
+export const FormContainer = styled.div`
+  width: 100%;
+  max-width: 480px;
 `;
 
 export const FormHeader = styled.div`
@@ -243,16 +123,17 @@ export const FormHeader = styled.div`
 `;
 
 export const FormTitle = styled.h2`
-  font-size: 1.75rem;
+  font-size: 2.25rem;
   font-weight: 800;
   color: #0F172A;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   letter-spacing: -0.02em;
 `;
 
 export const FormSubtitle = styled.p`
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   color: #64748B;
+  margin-bottom: 0;
 `;
 
 export const InputGroup = styled.div`
@@ -310,6 +191,7 @@ export const Input = styled.input`
     outline: none;
     border-color: #4F46E5;
     background: white;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
   }
 `;
 
@@ -325,18 +207,18 @@ export const EyeIcon = styled.div`
 export const CheckboxGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 32px;
 `;
 
 export const CheckboxLabel = styled.label`
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: #64748B;
   font-weight: 500;
   cursor: pointer;
 `;
 
-export const SignInButton = styled.button`
+export const SubmitButton = styled.button`
   width: 100%;
   padding: 16px;
   background: #4F46E5;
@@ -350,13 +232,17 @@ export const SignInButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
   transition: all 0.2s;
 
   &:hover {
     background: #4338CA;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
@@ -379,49 +265,18 @@ export const Divider = styled.div`
   }
 `;
 
-export const SocialGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 32px;
-`;
-
-export const SocialButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #F1F5F9;
-  border: 1px solid transparent;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #1E293B;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #E2E8F0;
-    border-color: #CBD5E1;
-  }
-
-  img {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-export const SignupPrompt = styled.p`
+export const BottomText = styled.p`
+  width: 100%;
   text-align: center;
-  font-size: 0.875rem;
+  margin-top: 24px;
+  font-size: 0.9375rem;
   color: #64748B;
 
   a {
     color: #4F46E5;
     text-decoration: none;
     font-weight: 700;
-
+    
     &:hover {
       text-decoration: underline;
     }
@@ -430,50 +285,39 @@ export const SignupPrompt = styled.p`
 
 /* — Footer —————————————————————————————————— */
 export const Footer = styled.footer`
-  padding: 32px 80px;
+  padding: 40px 80px;
+  border-top: 1px solid #F1F5F9;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: white;
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 20px;
-    padding: 32px 24px;
+    gap: 24px;
+    padding: 40px 24px;
     text-align: center;
   }
 `;
 
-export const FooterLogo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.875rem;
-  font-weight: 800;
-  color: #0F172A;
-
-  svg {
-    color: #4F46E5;
-  }
-`;
-
-export const Copyright = styled.span`
-  font-size: 0.6875rem;
+export const FooterNote = styled.span`
+  font-size: 0.75rem;
   color: #94A3B8;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 `;
 
 export const FooterLinks = styled.div`
   display: flex;
-  gap: 24px;
+  gap: 32px;
 `;
 
 export const FooterLink = styled.a`
   text-decoration: none;
-  font-size: 0.6875rem;
   color: #94A3B8;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: color 0.2s;

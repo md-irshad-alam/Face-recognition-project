@@ -10,6 +10,14 @@ CREATE TABLE IF NOT EXISTS students (
     dob DATE,
     admission_date DATE,
     photo_url VARCHAR(255),
+    student_type VARCHAR(50) DEFAULT 'Regular',
+    transport_type VARCHAR(50) DEFAULT 'Self',
+    tuition_fee DECIMAL(10, 2) DEFAULT 0,
+    transport_fee DECIMAL(10, 2) DEFAULT 0,
+    hostel_fee DECIMAL(10, 2) DEFAULT 0,
+    total_monthly_fee DECIMAL(10, 2) DEFAULT 0,
+    last_payment_date DATE,
+    opening_balance DECIMAL(10, 2) DEFAULT 0,
     is_on_hold BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
