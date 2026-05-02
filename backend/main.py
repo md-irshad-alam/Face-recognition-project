@@ -851,6 +851,39 @@ def check_email_uniqueness(email: str):
     return {"unique": True}
 
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+APK_PATH = "static/apps/app-release.apk"
+APK_FILENAME = "Visio-v1.0.apk"
+
+@app.get("/download/app/info")
+def apk_info():
+    """Returns APK availability and metadata. Frontend polls this to show/hide download button."""
+    if os.path.exists(APK_PATH):
+        size_bytes = os.path.getsize(APK_PATH)
+        size_mb = round(size_bytes / (1024 * 1024), 1)
+        return {
+            "available": True,
+            "filename": APK_FILENAME,
+            "size_mb": size_mb,
+            "url": f"/download/app"
+        }
+    return {"available": False}
+
+@app.get("/download/app")
+def download_apk():
+    """Serves the Visio Android APK with correct download headers."""
+    if not os.path.exists(APK_PATH):
+        raise HTTPException(
+            status_code=404,
+            detail="APK not yet available. Please check back later."
+        )
+    return FileResponse(
+        path=APK_PATH,
+        filename=APK_FILENAME,
+        media_type="application/vnd.android.package-archive",
+        headers={"Content-Disposition": f'attachment; filename="{APK_FILENAME}"'}
+    )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(exams.router)

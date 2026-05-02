@@ -3,7 +3,8 @@
  * Handles base URL, auth tokens, and common response patterns.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school';
+// const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;

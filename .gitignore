@@ -34,3 +34,13 @@ frontend/public/uploads/
 
 # Docker
 .dockerignore
+
+# ─── Binary / large files — deploy manually, never commit ────────────────────
+# APK files (copy to server manually after build)
+*.apk
+backend/static/apps/
+
+# Student & teacher photos (generated at runtime)
+backend/static/students/
+backend/static/teachers/
+

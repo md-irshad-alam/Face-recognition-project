@@ -1,13 +1,18 @@
 'use client'
 
-import React, { useState } from 'react'
-import styled from 'styled-components'
+import React, { useState, useEffect } from 'react'
+import styled, { keyframes } from 'styled-components'
 import {
   RiSearchLine,
   RiNotification3Line,
   RiLogoutBoxRLine,
   RiUserLine,
-  RiMenuLine,        // hamburger icon
+  RiMenuLine,
+  RiDownloadCloud2Line,
+  RiAndroidLine,
+  RiArrowDownSLine,
+  RiShieldCheckLine,
+  RiSmartphoneLine
 } from 'react-icons/ri'
 import { useAuth } from '@/context/AuthContext'
 
@@ -142,6 +147,195 @@ const NotifDot = styled.span`
   border: 2px solid #FFFFFF;
 `
 
+/* ── Download button animations ────────────────────── */
+const pulseRing = keyframes`
+  0%   { transform: scale(1);   opacity: 0.6; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+`
+
+const bounceArrow = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(3px); }
+`
+
+const shimmer = keyframes`
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+`
+
+const tooltipSlide = keyframes`
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+`
+
+/* Pulsing glow ring behind button */
+const PulseRing = styled.span`
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 2px solid #22c55e;
+  animation: ${pulseRing} 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  pointer-events: none;
+`
+
+/* Tooltip card */
+const TooltipCard = styled.div`
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 210px;
+  background: #0F172A;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(34,197,94,0.1);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 9999;
+  transition: opacity 0.2s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px;
+    height: 12px;
+    background: #0F172A;
+    border-left: 1px solid rgba(34,197,94,0.25);
+    border-top: 1px solid rgba(34,197,94,0.25);
+    border-radius: 2px 0 0 0;
+  }
+`
+
+const TooltipHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+`
+
+const TooltipAndroidBadge = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 4px 8px rgba(34,197,94,0.3);
+`
+
+const TooltipTitle = styled.div`
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  line-height: 1.2;
+`
+
+const TooltipSub = styled.div`
+  font-size: 0.6875rem;
+  color: #64748B;
+  margin-top: 1px;
+`
+
+const TooltipDivider = styled.div`
+  width: 100%;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 8px 0;
+`
+
+const TooltipRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.6875rem;
+`
+
+const TooltipLabel = styled.span`
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`
+
+const TooltipValue = styled.span`
+  color: #94A3B8;
+  font-weight: 600;
+`
+
+const DownloadCta = styled.div`
+  margin-top: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background-size: 200% auto;
+  color: white;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  animation: ${shimmer} 2.5s linear infinite;
+  letter-spacing: 0.02em;
+
+  svg {
+    animation: ${bounceArrow} 1s ease infinite;
+  }
+`
+
+/* The main button wrapper */
+const DownloadBtnWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+
+  &:hover ${TooltipCard} {
+    opacity: 1;
+    animation: ${tooltipSlide} 0.22s ease forwards;
+  }
+
+  @media (max-width: 640px) {
+    display: none;
+  }
+`
+
+const DownloadAppBtn = styled.a`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+  color: #16a34a;
+  border: 1.5px solid #bbf7d0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-decoration: none;
+  overflow: visible;
+
+  &:hover {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35), 0 0 0 4px rgba(34,197,94,0.12);
+    border-color: transparent;
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.98);
+  }
+`
+
 const ProfileWrap = styled.div`
   position: relative;
   flex-shrink: 0;
@@ -264,6 +458,14 @@ interface NavbarProps {
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
+  const [apkInfo, setApkInfo] = useState<{ available: boolean; size_mb?: number } | null>(null)
+
+  useEffect(() => {
+    fetch('https://api.visio.school/download/app/info')
+      .then(r => r.json())
+      .then(data => setApkInfo(data))
+      .catch(() => setApkInfo({ available: false }))
+  }, [])
 
   if (!user) return null
 
@@ -295,6 +497,50 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           <RiNotification3Line size={22} />
           <NotifDot />
         </NotifButton>
+
+        <DownloadBtnWrap>
+          <DownloadAppBtn
+            href={apkInfo?.available ? 'https://api.visio.school/download/app' : undefined}
+            download={apkInfo?.available ? 'Visio-v1.0.apk' : undefined}
+            aria-label="Download Visio Mobile App APK"
+            style={!apkInfo?.available ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : {}}
+          >
+            <PulseRing />
+            <RiDownloadCloud2Line size={22} />
+          </DownloadAppBtn>
+
+          <TooltipCard role="tooltip">
+            <TooltipHeader>
+              <TooltipAndroidBadge>
+                <RiAndroidLine size={16} />
+              </TooltipAndroidBadge>
+              <div>
+                <TooltipTitle>Visio App</TooltipTitle>
+                <TooltipSub>Android APK</TooltipSub>
+              </div>
+            </TooltipHeader>
+
+            <TooltipDivider />
+
+            <TooltipRow>
+              <TooltipLabel><RiSmartphoneLine size={11} /> Version</TooltipLabel>
+              <TooltipValue>v1.0.0</TooltipValue>
+            </TooltipRow>
+            <TooltipRow style={{ marginTop: 6 }}>
+              <TooltipLabel><RiShieldCheckLine size={11} /> Size</TooltipLabel>
+              <TooltipValue>{apkInfo?.size_mb ? `${apkInfo.size_mb} MB` : 'Checking…'}</TooltipValue>
+            </TooltipRow>
+            <TooltipRow style={{ marginTop: 6 }}>
+              <TooltipLabel><RiShieldCheckLine size={11} /> Signed</TooltipLabel>
+              <TooltipValue>Release Build</TooltipValue>
+            </TooltipRow>
+
+            <DownloadCta style={!apkInfo?.available ? { background: '#334155', animation: 'none' } : {}}>
+              <RiArrowDownSLine size={14} />
+              {apkInfo?.available ? 'Tap to Download' : 'Coming Soon'}
+            </DownloadCta>
+          </TooltipCard>
+        </DownloadBtnWrap>
 
         <ProfileWrap onMouseLeave={() => setOpen(false)}>
           <ProfileSection onClick={() => setOpen(!open)}>
