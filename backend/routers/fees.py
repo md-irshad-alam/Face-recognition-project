@@ -112,8 +112,7 @@ async def mark_payment_done(request: dict):
         query = f"""
             UPDATE students 
             SET last_payment_date = %s, 
-                opening_balance = 0,
-                status = 'Paid'
+                opening_balance = 0
             WHERE id IN ({placeholders})
         """
         

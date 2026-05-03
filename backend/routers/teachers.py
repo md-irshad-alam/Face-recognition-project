@@ -11,6 +11,12 @@ router = APIRouter(
     dependencies=[Depends(auth.require_admin)]
 )
 
+
+def _get_school_id(current_user: dict = Depends(auth.require_admin)) -> str:
+    return current_user.get('school_id', '')
+
+import school_utils
+
 @router.post("/", response_model=TeacherResponse)
 async def add_teacher(
     id: str                      = Form(...),
@@ -29,7 +35,19 @@ async def add_teacher(
     assigned_classes: str        = Form('[]'),
     notifications: str           = Form('[]'),
     photo: UploadFile            = File(None),
+    current_user: dict           = Depends(auth.require_admin),
 ):
+    school_id = current_user.get('school_id', '')
+    
+    # Validate teacher email contains the same school code
+    teacher_school_id = school_utils.extract_school_id(email)
+    if teacher_school_id != school_id:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Teacher email must include your school code '{school_id.upper()}'. "
+                   f"Correct format: name.{school_id}@domain.com"
+        )
+
     try:
         existing = database.get_teacher_by_id(id)
         if existing:
@@ -61,21 +79,13 @@ async def add_teacher(
                 raise HTTPException(status_code=500, detail="Failed to process image")
 
         teacher_data = {
-            "id": id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "email": email,
-            "phone": phone,
-            "highest_education": highest_education,
-            "years_of_experience": years_of_experience,
-            "specialization": specialization,
-            "department": department or specialization,
-            "photo_url": photo_url,
-            "bio": bio,
-            "office_days": office_days,
-            "office_time": office_time,
-            "assigned_classes": assigned_classes,
-            "notifications": notifications,
+            "id": id, "first_name": first_name, "last_name": last_name,
+            "email": email, "phone": phone, "highest_education": highest_education,
+            "years_of_experience": years_of_experience, "specialization": specialization,
+            "department": department or specialization, "photo_url": photo_url,
+            "bio": bio, "office_days": office_days, "office_time": office_time,
+            "assigned_classes": assigned_classes, "notifications": notifications,
+            "school_id": school_id,
         }
 
         success = database.create_teacher(teacher_data)
@@ -85,7 +95,11 @@ async def add_teacher(
         # Create user account with the supplied role
         resolved_role = role if role in ('admin', 'teacher', 'hod', 'lecturer') else 'teacher'
         hashed_pwd = auth.get_password_hash(id)
-        auth.create_user(email, hashed_pwd, f"{first_name} {last_name}", role=resolved_role)
+        auth.create_user(
+            email=email, password_hash=hashed_pwd,
+            full_name=f"{first_name} {last_name}",
+            school_id=school_id, role=resolved_role
+        )
 
         return database.get_teacher_by_id(id)
 
@@ -96,14 +110,13 @@ async def add_teacher(
 
 
 @router.get("/", response_model=List[TeacherResponse])
-def get_teachers():
-    return database.get_all_teachers()
+def get_teachers(current_user: dict = Depends(auth.require_admin)):
+    return database.get_all_teachers(school_id=current_user.get('school_id', ''))
 
 
 @router.get("/stats")
-def get_teacher_stats():
-    """Aggregated stats for the Faculty Directory header cards."""
-    teachers  = database.get_all_teachers()
+def get_teacher_stats(current_user: dict = Depends(auth.require_admin)):
+    teachers = database.get_all_teachers(school_id=current_user.get('school_id', ''))
     total     = len(teachers)
     phd       = sum(1 for t in teachers if t.get('is_phd') or
                     (t.get('highest_education') or '').lower().startswith('phd'))

@@ -26,14 +26,31 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Extract school code from email for live preview
+  const extractSchoolCode = (e: string): string | null => {
+    try {
+      const local = e.split('@')[0];
+      if (!local) return null;
+      const parts = local.split('.');
+      if (parts.length < 2) return null;
+      const code = parts[parts.length - 1];
+      return /^[a-z0-9][a-z0-9\-]{1,19}$/i.test(code) ? code.toLowerCase() : null;
+    } catch { return null; }
+  };
+  const detectedSchool = extractSchoolCode(email);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) {
-      toast.error('Required: Name, institutional email, and security password.');
+      toast.error('Required: Name, school email, and password.');
       return;
     }
     if (!agreed) {
-      toast.error('Educational protocols require agreement to terms and data processing.');
+      toast.error('Please agree to the terms to continue.');
+      return;
+    }
+    if (!detectedSchool) {
+      toast.error('Email must follow format: admin.SCHOOLCODE@domain.com (e.g. admin.dis@gmail.com)');
       return;
     }
 
@@ -46,11 +63,13 @@ export default function SignupPage() {
         full_name: fullName,
         role: 'admin'
       });
-      toast.success('Institutional account created successfully.');
+      toast.success(`School '${detectedSchool}' registered successfully!`);
       setSuccess(true);
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: any) {
-      toast.error(err.message || 'Registration failed. The email may already be in use.');
+      const msg = err.message || 'Registration failed.';
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -121,14 +140,24 @@ export default function SignupPage() {
                     />
                   </SC.InputGroup>
                   <SC.InputGroup>
-                    <SC.Label>Institutional Email</SC.Label>
-                    <SC.Input 
+                    <SC.Label>Admin Email <span style={{color:'#94A3B8', fontWeight:500}}>(format: admin.SCHOOLCODE@domain.com)</span></SC.Label>
+                    <SC.Input
                       type="email"
-                      placeholder="j.sterling@university.edu" 
+                      placeholder="admin.dis@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={loading || success}
                     />
+                    {detectedSchool && (
+                      <p style={{ fontSize: '0.8rem', color: '#16a34a', marginTop: '6px', fontWeight: 700 }}>
+                        ✓ School code detected: <strong>{detectedSchool.toUpperCase()}</strong>
+                      </p>
+                    )}
+                    {email && !detectedSchool && (
+                      <p style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '6px' }}>
+                        ✗ Use format: admin.SCHOOLCODE@domain.com
+                      </p>
+                    )}
                   </SC.InputGroup>
                 </SC.InputGrid>
 

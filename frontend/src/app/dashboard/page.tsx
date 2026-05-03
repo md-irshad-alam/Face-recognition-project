@@ -26,7 +26,7 @@ ChartJS.register(
 );
 
 export default function DashboardPage() {
-  const { stats, exams, loading } = useDashboard();
+  const { stats, feeStats, exams, loading } = useDashboard();
   const queryClient = useQueryClient();
   const [activeTrendTab, setActiveTrendTab] = useState<'daily' | 'weekly'>('daily');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
   // Dynamic vs Dummy Logic
   const displayStats = useMemo(() => ({
-    total: stats?.total ?? 1250, // Dummy fallback
+    total: stats?.total ?? 1250,
     present: stats?.present ?? 1182,
     absent: stats?.absent ?? 68,
     teachers: stats?.teachers ?? 84,
@@ -105,16 +105,16 @@ export default function DashboardPage() {
     }
   };
 
-  const feeData = {
+  const feeData = useMemo(() => ({
     labels: ['Collected', 'Pending'],
     datasets: [{
-      data: [ displayStats.isDummy ? 85 : 78, displayStats.isDummy ? 15 : 22 ],
+      data: feeStats ? [feeStats.rate, 100 - feeStats.rate] : [85, 15],
       backgroundColor: ['#4F46E5', '#F1F5F9'],
       borderWidth: 0,
       cutout: '80%',
       borderRadius: 20
     }]
-  };
+  }), [feeStats]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -236,18 +236,18 @@ export default function DashboardPage() {
           <SC.FeeDonutWrapper>
             <Doughnut data={feeData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
             <SC.DonutCenter>
-              <h2>{displayStats.isDummy ? 85 : 78}%</h2>
+              <h2>{feeStats ? feeStats.rate : 85}%</h2>
               <span>Collected</span>
             </SC.DonutCenter>
           </SC.FeeDonutWrapper>
           <SC.LegendContainer>
             <SC.LegendItem color="#4F46E5">
               <span className="label">Total Collected</span>
-              <span className="value">₹{displayStats.isDummy ? '4.2L' : '3.8L'}</span>
+              <span className="value">₹{feeStats ? feeStats.collected.toLocaleString() : '4.2L'}</span>
             </SC.LegendItem>
             <SC.LegendItem color="#F1F5F9">
               <span className="label">Outstanding</span>
-              <span className="value">₹{displayStats.isDummy ? '82K' : '1.2L'}</span>
+              <span className="value">₹{feeStats ? feeStats.outstanding.toLocaleString() : '82K'}</span>
             </SC.LegendItem>
           </SC.LegendContainer>
         </SC.Card>
@@ -268,14 +268,14 @@ export default function DashboardPage() {
             marginTop: '24px', 
             padding: '0 12px' 
           }}>
-            {[
+            {(feeStats?.monthly || [
               { month: 'Jan', value: 45 },
               { month: 'Feb', value: 55 },
               { month: 'Mar', value: 75 },
               { month: 'Apr', value: 85 },
               { month: 'May', value: 95 },
               { month: 'Jun', value: 70 },
-            ].map((data) => (
+            ]).map((data) => (
               <div key={data.month} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', flex: 1 }}>
                 <div style={{ 
                   width: '24px', 

@@ -13,6 +13,7 @@ import {
   WizSectionTitle, WizSectionHint,
   PrimaryBtn, GhostBtn, ModalBody, ModalFooter,
 } from '../teachers.sc'
+import { useAuth } from '@/context/AuthContext'
 
 const DEPARTMENTS = [
   'Mathematics', 'Physics', 'Chemistry', 'Biology',
@@ -73,6 +74,8 @@ interface Props {
 }
 
 export default function OnboardWizard({ onSubmit, loading }: Props) {
+  const { user } = useAuth()
+  const schoolCode = user?.school_id || ''
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormData>(EMPTY)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -191,10 +194,13 @@ export default function OnboardWizard({ onSubmit, loading }: Props) {
 
               <FieldRow>
                 <FieldGroup>
-                  <FieldLabel>Email Address *</FieldLabel>
+                  <FieldLabel>
+                    Email Address * 
+                    {schoolCode && <span style={{fontSize:'0.7rem', color:'#6366F1', marginLeft:6}}>(Format: name.{schoolCode}@domain.com)</span>}
+                  </FieldLabel>
                   <FieldInput
                     type="email"
-                    placeholder="teacher@school.edu"
+                    placeholder={schoolCode ? `name.${schoolCode}@gmail.com` : "teacher@school.edu"}
                     value={form.email}
                     onChange={e => set('email', e.target.value)}
                   />

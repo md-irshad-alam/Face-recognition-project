@@ -12,6 +12,7 @@ import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
 from dataclasses import asdict
 from routers import exams, teachers, fees, whatsapp
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
+import migrate
 
 app = FastAPI(title="Face Recognition Attendance System")
 app.include_router(fees.router)
@@ -99,21 +100,26 @@ def load_known_faces():
 async def startup_event():
     load_known_faces()
     database.init_db()
+    migrate.migrate_db()
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Face Recognition Attendance System API"}
 
 @app.get("/attendance/today")
-def get_todays_attendance_list(class_name: str = None):
-    return database.get_todays_attendance(class_name=class_name)
+def get_todays_attendance_list(
+    class_name: str = None,
+    current_user: dict = Depends(auth.get_current_user)
+):
+    school_id = current_user.get('school_id', '')
+    return database.get_todays_attendance(class_name=class_name, school_id=school_id)
 
 @app.get("/stats")
-def get_stats():
-    return database.get_dashboard_stats()
+def get_stats(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_dashboard_stats(school_id=current_user.get('school_id', ''))
 
 @app.get("/devices")
-def get_devices():
+def get_devices(current_user: dict = Depends(auth.get_current_user)):
     return database.get_active_devices()
 
 from fastapi import Form, UploadFile, File
@@ -141,13 +147,15 @@ async def create_student(
     total_monthly_fee: float = Form(0),
     last_payment_date: str = Form(None),
     opening_balance: float = Form(0),
-    photo: UploadFile = File(None)
+    photo: UploadFile = File(None),
+    current_user: dict = Depends(auth.require_admin)
 ):
+    school_id = current_user.get('school_id', '')
     try:
-        # Check if student exists
+        # Check if student ID already exists (global uniqueness)
         existing = database.get_student_by_id(id)
         if existing:
-             raise HTTPException(status_code=400, detail="Student ID already exists")
+            raise HTTPException(status_code=400, detail="Student ID already exists")
 
         photo_url = None
         img_buffer = None
@@ -179,16 +187,16 @@ async def create_student(
         cursor = conn.cursor()
         query = """
         INSERT INTO students (
-            id, name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url, 
+            id, name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url,
             student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee, is_on_hold,
-            last_payment_date, opening_balance
+            last_payment_date, opening_balance, school_id
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, %s, %s, %s)
         """
         values = (
             id, name, class_name, section, email, phone, parent_phone, dob, admission_date, photo_url,
             student_type, transport_type, tuition_fee, transport_fee, hostel_fee, total_monthly_fee,
-            last_payment_date, opening_balance
+            last_payment_date, opening_balance, school_id
         )
         cursor.execute(query, values)
         conn.commit()
@@ -319,29 +327,34 @@ async def update_student(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/fees/students")
-async def get_fees_students():
-    return database.get_all_students_for_fees()
+async def get_fees_students(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_all_students_for_fees(school_id=current_user.get('school_id', ''))
+
+@app.get("/fees/stats")
+async def get_fee_stats(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_fee_stats(school_id=current_user.get('school_id', ''))
 
 @app.get("/students")
-def get_students():
-    return database.get_all_students()
+def get_students(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_all_students(school_id=current_user.get('school_id', ''))
 
 @app.get("/students/classes")
-def get_student_classes():
-    return database.get_distinct_classes()
+def get_student_classes(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_distinct_classes(school_id=current_user.get('school_id', ''))
 
 @app.get("/students/{student_id}")
-def get_student(student_id: str):
-    student = database.get_student_by_id(student_id)
+def get_student(student_id: str, current_user: dict = Depends(auth.get_current_user)):
+    school_id = current_user.get('school_id', '')
+    student = database.get_student_by_id(student_id, school_id=school_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    history = database.get_attendance_history(student_id)
+    history = database.get_attendance_history(student_id, school_id=school_id)
     return {"student": student, "history": history}
 
 @app.delete("/students/{student_id}")
 def delete_student(student_id: str, current_user: dict = Depends(auth.require_admin)):
-    """Delete a student and their attendance records. Admin only."""
-    success = database.delete_student(student_id)
+    school_id = current_user.get('school_id', '')
+    success = database.delete_student(student_id, school_id=school_id)
     if not success:
         raise HTTPException(status_code=404, detail="Student not found or failed to delete")
     return {"message": "Student deleted successfully"}
@@ -396,6 +409,7 @@ async def scan_face(
 
         # ── Run optimized recognition engine ──────────────────────────────
         student_id, metrics = face_engine.recognize_face(image_bytes)
+        school_id = current_user.get('school_id', '')
 
         # ── Build API result ─────────────────────────────────────────────
         if not metrics.face_found:
@@ -408,9 +422,9 @@ async def scan_face(
                 "metrics": asdict(metrics),
             }
         elif student_id:
-            student = database.get_student_by_id(student_id)
+            student = database.get_student_by_id(student_id)  # scan bypasses school filter for face match
             if student:
-                already_marked = database.check_attendance_status(student_id)
+                already_marked = database.check_attendance_status(student_id, school_id=school_id)
 
                 if already_marked:
                     # Student already scanned today — return a distinct status so
@@ -430,8 +444,8 @@ async def scan_face(
                         "timestamp": payload.timestamp,
                     }
                 else:
-                    # Fresh scan — write attendance in background (non-blocking)
-                    background_tasks.add_task(database.mark_attendance, student_id)
+                    # Fresh scan — write attendance
+                    background_tasks.add_task(database.mark_attendance, student_id, school_id)
                     result = {
                         "status": "success",
                         "student_name": student['name'],
@@ -594,58 +608,74 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"WebSocket error: {e}")
 
-# --- Authentication ---
+import migrate
+from school_utils import validate_school_email, extract_school_id
 import auth
 from models import UserResponse
 
 @app.post("/auth/register")
 def register(user: UserCreate):
-    db_user = auth.get_user_by_email(user.email)
-    if db_user:
+    # 1. Extract school_id from email
+    try:
+        school_id = validate_school_email(user.email)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # 2. Prevent duplicate email
+    if auth.get_user_by_email(user.email):
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
+    role = user.role if user.role in ('admin', 'teacher', 'hod', 'lecturer') else 'user'
+
+    # 3. Enforce one-admin-per-school
+    if role == 'admin':
+        existing_admin = auth.get_school_admin(school_id)
+        if existing_admin:
+            raise HTTPException(
+                status_code=409,
+                detail=f"An admin for school '{school_id}' already exists. "
+                       f"Each school can only have one admin account."
+            )
+
+    # 4. Create user
     hashed_password = auth.get_password_hash(user.password)
-    # Defaulting to passed role or 'admin' for institutional safety
-    success = auth.create_user(user.email, hashed_password, user.full_name, role=user.role or 'user')
-    
+    success = auth.create_user(
+        email=user.email,
+        password_hash=hashed_password,
+        full_name=user.full_name,
+        school_id=school_id,
+        role=role
+    )
     if not success:
         raise HTTPException(status_code=500, detail="Failed to create user")
-    
-    return {"message": "User created successfully"}
+
+    return {"message": "User created successfully", "school_id": school_id}
 
 @app.post("/auth/login", response_model=Token)
 def login(user: UserLogin):
     if user.current_device:
-        print(f"Login attempt from device: {user.current_device}")
-        # Register/Update device status on login
-        database.update_device_status(
-            user.current_device, 
-            name=user.email, # Use email as a temporary name if full_name not yet fetched
-            device_type="Mobile"
-        )
-    
-    db_user = auth.get_user_by_email(user.email)
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    if not auth.verify_password(user.password, db_user['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Update device with full name if available
-    if user.current_device:
-        database.update_device_status(
-            user.current_device, 
-            name=db_user['full_name'], 
-            device_type="Mobile"
-        )
+        database.update_device_status(user.current_device, name=user.email, device_type="Mobile")
 
-    access_token = auth.create_access_token(data={"sub": db_user['email'], "role": db_user.get('role', 'user')})
+    db_user = auth.get_user_by_email(user.email)
+    if not db_user or not auth.verify_password(user.password, db_user['password_hash']):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if user.current_device:
+        database.update_device_status(user.current_device, name=db_user['full_name'], device_type="Mobile")
+
+    school_id = db_user.get('school_id') or extract_school_id(db_user['email']) or ''
+    access_token = auth.create_access_token(data={
+        "sub": db_user['email'],
+        "role": db_user.get('role', 'user'),
+        "school_id": school_id
+    })
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
         "user_name": db_user['full_name'],
         "user_email": db_user['email'],
-        "role": db_user.get('role', 'user') or 'user'
+        "role": db_user.get('role', 'user') or 'user',
+        "school_id": school_id
     }
 
 @app.post("/auth/google", response_model=Token)
@@ -653,28 +683,35 @@ async def google_login(login_data: GoogleLogin):
     id_info = await auth.verify_google_token(login_data.token)
     if not id_info:
         raise HTTPException(status_code=401, detail="Invalid Google Token")
-    
-    email = id_info.get("email")
-    name = id_info.get("name")
+
+    email     = id_info.get("email")
+    name      = id_info.get("name")
     google_id = id_info.get("sub")
-    
-    # Check if user exists
+    school_id = extract_school_id(email) or ''
+
     db_user = auth.get_user_by_email(email)
     if not db_user:
-        # Auto-register
-        success = auth.create_user(email, None, name, google_id) # No password for Google users
+        success = auth.create_user(
+            email=email, password_hash=None, full_name=name,
+            school_id=school_id, google_id=google_id
+        )
         if not success:
-             raise HTTPException(status_code=500, detail="Failed to create user")
-        # Fetch again to get clean data or just use what we have
-        db_user = {"email": email, "full_name": name, "role": "user"}
-    
-    access_token = auth.create_access_token(data={"sub": email, "role": db_user.get('role', 'user')})
+            raise HTTPException(status_code=500, detail="Failed to create user")
+        db_user = {"email": email, "full_name": name, "role": "user", "school_id": school_id}
+
+    resolved_school_id = db_user.get('school_id') or school_id
+    access_token = auth.create_access_token(data={
+        "sub": email,
+        "role": db_user.get('role', 'user'),
+        "school_id": resolved_school_id
+    })
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
         "user_name": db_user.get('full_name', name),
         "user_email": db_user.get('email', email),
-        "role": db_user.get('role', 'user') or 'user'
+        "role": db_user.get('role', 'user') or 'user',
+        "school_id": resolved_school_id
     }
 
 from models import UserResponse
@@ -768,15 +805,16 @@ def update_balance(teacher_id: str, data: dict, current_user: dict = Depends(aut
 
 @app.get("/admin/pending-leaves")
 def get_pending_leaves(current_user: dict = Depends(auth.require_admin)):
+    school_id = current_user.get('school_id', '')
     conn = database.create_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT lr.*, t.first_name, t.last_name, t.department 
-        FROM leave_requests lr 
-        JOIN teachers t ON lr.teacher_id = t.id 
-        WHERE lr.status = 'PENDING' 
+        SELECT lr.*, t.first_name, t.last_name, t.department
+        FROM leave_requests lr
+        JOIN teachers t ON lr.teacher_id = t.id
+        WHERE lr.status = 'PENDING' AND t.school_id = %s
         ORDER BY lr.applied_at DESC
-    """)
+    """, (school_id,))
     requests = cursor.fetchall()
     
     # Format dates

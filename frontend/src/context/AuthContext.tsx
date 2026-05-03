@@ -9,6 +9,7 @@ interface User {
   full_name: string;
   email: string;
   role: string;
+  school_id?: string;
 }
 
 interface AuthContextType {
@@ -41,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: data.user_email,
           full_name: data.user_name,
           email: data.user_email,
-          role: data.role
+          role: data.role,
+          school_id: data.school_id
         });
       }
     } catch (error: any) {
@@ -81,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: data.user_email,
           full_name: data.user_name,
           email: data.user_email,
-          role: data.role
+          role: data.role,
+          school_id: data.school_id
         });
         return true;
       }

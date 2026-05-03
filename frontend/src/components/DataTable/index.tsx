@@ -44,6 +44,12 @@ const Th = styled.th<{ $align?: string; $width?: string }>`
   border-bottom: 1.5px solid #E2E8F0;
   text-align: ${props => props.$align || 'left'};
   width: ${props => props.$width || 'auto'};
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    padding: 12px 16px;
+    font-size: 0.6875rem;
+  }
 `;
 
 const Td = styled.td<{ $align?: string }>`
@@ -53,6 +59,12 @@ const Td = styled.td<{ $align?: string }>`
   border-bottom: 1px solid #F1F5F9;
   text-align: ${props => props.$align || 'left'};
   vertical-align: middle;
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    padding: 12px 16px;
+    font-size: 0.8125rem;
+  }
 `;
 
 const Tr = styled.tr`

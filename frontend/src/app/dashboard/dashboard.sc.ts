@@ -39,6 +39,10 @@ export const Greeting = styled.div`
     color: #0F172A;
     margin: 0;
     letter-spacing: -0.04em;
+
+    @media (max-width: 480px) {
+      font-size: 1.75rem;
+    }
   }
 
   p {
@@ -46,6 +50,10 @@ export const Greeting = styled.div`
     color: #64748B;
     font-weight: 500;
     margin: 4px 0 0;
+
+    @media (max-width: 480px) {
+      font-size: 0.875rem;
+    }
   }
 `;
 
@@ -102,6 +110,12 @@ export const StatCard = styled.div`
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 20px;
+  }
 
   &:hover {
     transform: translateY(-6px);
@@ -177,6 +191,13 @@ export const Card = styled.div`
   
   @media (max-width: 768px) {
     padding: 24px;
+    border-radius: 24px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 16px;
+    gap: 16px;
+    border-radius: 20px;
   }
 `;
 
@@ -304,6 +325,10 @@ export const DonutCenter = styled.div`
     font-weight: 900;
     color: #0F172A;
     margin: 0;
+
+    @media (max-width: 480px) {
+      font-size: 1.75rem;
+    }
   }
   span {
     font-size: 0.6875rem;

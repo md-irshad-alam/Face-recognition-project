@@ -12,6 +12,7 @@ import {
   RiCheckLine
 } from 'react-icons/ri';
 import { toast } from 'react-hot-toast';
+import { api } from '@/services/api';
 import * as SC from './fees.sc';
 
 import DataTable from '@/components/DataTable';
@@ -25,18 +26,17 @@ export default function FeesPage() {
   const [page, setPage] = useState(1);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/fees/students`)
-      .then(res => res.json())
-      .then(data => {
-        setFeeData(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to fetch fees data", err);
-        setLoading(false);
-      });
+    try {
+      const data = await api.get<any[]>('/fees/students');
+      setFeeData(data);
+    } catch (err) {
+      console.error("Failed to fetch fees data", err);
+      toast.error("Failed to synchronize billing records.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -45,49 +45,25 @@ export default function FeesPage() {
 
   const handleSendReminder = async (studentId: string, studentName: string, amount: string, feeType: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/fees/send-reminder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_id: studentId,
-          amount: amount,
-          fee_type: feeType
-        })
+      await api.post('/fees/send-reminder', {
+        student_id: studentId,
+        amount: amount,
+        fee_type: feeType
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(`WhatsApp reminder sent to ${studentName}'s parent.`, { icon: '📲' });
-      } else {
-        // Show the detailed error from backend (like cooldown minutes)
-        toast.error(data.detail || 'Failed to send reminder', {
-          duration: 4000,
-          style: { minWidth: '300px' }
-        });
-      }
+      toast.success(`WhatsApp reminder sent to ${studentName}'s parent.`, { icon: '📲' });
     } catch (err: any) {
-      toast.error('Messaging gateway connection failed');
+      toast.error(err.message || 'Messaging gateway connection failed');
     }
   };
 
   const processPayment = async () => {
     if (selectedStudents.length === 0) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/fees/mark-payment-done`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_ids: selectedStudents })
-      });
-      if (response.ok) {
-        toast.success("Payments synchronized successfully!");
-        setSelectedStudents([]);
-        setShowConfirmModal(false);
-        fetchData();
-      } else {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to update payment status");
-      }
+      await api.post('/fees/mark-payment-done', { student_ids: selectedStudents });
+      toast.success("Payments synchronized successfully!");
+      setSelectedStudents([]);
+      setShowConfirmModal(false);
+      fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to update payment status");
     }

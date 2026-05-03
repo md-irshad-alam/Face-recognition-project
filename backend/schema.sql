@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS students (
     total_monthly_fee DECIMAL(10, 2) DEFAULT 0,
     last_payment_date DATE,
     opening_balance DECIMAL(10, 2) DEFAULT 0,
+    last_reminder_sent TIMESTAMP NULL,
     is_on_hold BOOLEAN DEFAULT FALSE,
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     date DATE NOT NULL,
     check_in_time TIME,
     status VARCHAR(20) DEFAULT 'Present',
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
     FOREIGN KEY (student_id) REFERENCES students(id)
 );
 
@@ -38,6 +41,7 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(100),
     google_id VARCHAR(100),
     role VARCHAR(20) DEFAULT 'user',
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,6 +65,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     photo_url VARCHAR(255),
     password VARCHAR(255),
     role VARCHAR(20) DEFAULT 'teacher',
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -73,6 +78,7 @@ CREATE TABLE IF NOT EXISTS exams (
     schedule_type VARCHAR(50),
     exam_type VARCHAR(50),
     proctor_base BOOLEAN DEFAULT FALSE,
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

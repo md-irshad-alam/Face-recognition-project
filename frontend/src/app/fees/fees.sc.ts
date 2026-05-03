@@ -7,6 +7,10 @@ export const PageWrapper = styled.div`
   gap: 2rem;
   animation: fadeIn 0.4s ease-out;
 
+  @media (max-width: 480px) {
+    gap: 1.25rem;
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -18,6 +22,12 @@ export const Header = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 0.5rem;
+  gap: 16px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
   .title-area {
     h1 {
@@ -26,12 +36,20 @@ export const Header = styled.div`
       color: #0F172A;
       margin: 0 0 0.5rem 0;
       letter-spacing: -0.02em;
+
+      @media (max-width: 480px) {
+        font-size: 1.5rem;
+      }
     }
     p {
       color: #64748B;
       font-size: 1rem;
       margin: 0;
       font-weight: 500;
+
+      @media (max-width: 480px) {
+        font-size: 0.8125rem;
+      }
     }
   }
 `;
@@ -46,10 +64,17 @@ export const PrimaryButton = styled.button`
   font-size: 0.9375rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  white-space: nowrap;
+
+  @media (max-width: 480px) {
+    padding: 12px 20px;
+    font-size: 0.8125rem;
+  }
 
   &:hover {
     background: #4338CA;
@@ -363,6 +388,11 @@ export const Tab = styled.button<{ $active?: boolean }>`
   margin-bottom: -2px;
   cursor: pointer;
   transition: all 0.2s;
+
+  @media (max-width: 480px) {
+    font-size: 0.8125rem;
+    padding: 10px 2px;
+  }
 
   &:hover {
     color: #4F46E5;

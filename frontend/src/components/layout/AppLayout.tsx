@@ -26,6 +26,7 @@ const MainArea = styled.main`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow-x: hidden;
 
   @media (max-width: 1024px) {
     margin-left: 0;
