@@ -64,8 +64,11 @@ export default function TeachersPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null)
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      router.push('/dashboard')
+    if (user) {
+      const role = user.role?.toLowerCase()
+      if (role !== 'admin' && role !== 'org_admin') {
+        router.push('/dashboard')
+      }
     }
   }, [user, router])
 
@@ -127,12 +130,11 @@ export default function TeachersPage() {
           <PageTitle>Faculty Directory</PageTitle>
           <PageSubtitle>Manage academic staff, roles, and departmental assignments.</PageSubtitle>
         </HeaderLeft>
-        <HeaderActions>
-          <OutlineBtn onClick={() => toast.success('Exporting Faculty Ledger...')}>Export</OutlineBtn>
+        
           <PrimaryBtn onClick={() => setShowOnboard(true)}>
             <RiAddLine size={18} /> Onboard Teacher
           </PrimaryBtn>
-        </HeaderActions>
+        
       </PageHeader>
 
       {/* ── Stats Cards ─────────────────────────────────── */}

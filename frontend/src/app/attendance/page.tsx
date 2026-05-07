@@ -365,9 +365,6 @@ export default function AttendancePage() {
               <SC.SyncButton onClick={() => toast.success("Orchestrating global synchronization...")}>
                 <RiGlobalLine size={20} /> Global Sync
               </SC.SyncButton>
-              <SC.SyncButton $primary onClick={() => toast.success("Initializing node registration wizard...")}>
-                <RiAddLine size={20} /> Register Node
-              </SC.SyncButton>
             </SC.HeaderActions>
           </SC.DashboardHeader>
 

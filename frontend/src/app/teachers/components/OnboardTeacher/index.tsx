@@ -178,15 +178,15 @@ export default function OnboardTeacher({ onClear, initialData }: OnboardTeacherP
   return (
     <SC.Container>
       <SC.Header>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <SC.Badge>{isEditMode ? 'Modify Faculty Record' : 'Teacher Registration'}</SC.Badge>
+            {/* <SC.Badge>{isEditMode ? 'Modify Faculty Record' : 'Teacher Registration'}</SC.Badge> */}
             <SC.Title>{isEditMode ? 'Edit' : 'Set up your'} <span>Academic Profile</span></SC.Title>
             <SC.Subtitle>
               {isEditMode ? 'Update institutional records for this faculty member.' : 'Complete your professional registration to join the faculty portal.'}
             </SC.Subtitle>
           </div>
-          <UIBackButton onClick={onClear}>Back to Faculty</UIBackButton>
+          <UIBackButton onClick={onClear}>Back to List</UIBackButton>
         </div>
       </SC.Header>
 

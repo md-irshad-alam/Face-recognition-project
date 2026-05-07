@@ -10,6 +10,8 @@ export interface DashboardStats {
   absent: number
   teachers: number
   exams: number
+  attendance_trend: number[]
+  student_trend: number[]
 }
 
 export interface FeeStats {
@@ -28,29 +30,24 @@ export interface RecentExam {
   exam_type: string
 }
 
+export interface DashboardSummary {
+  stats: DashboardStats
+  fees: FeeStats
+  exams: RecentExam[]
+  pending_leaves: number
+  at_risk_count: number
+  pending_promotions: number
+}
+
 export function useDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [feeStats, setFeeStats] = useState<FeeStats | null>(null)
-  const [exams, setExams] = useState<RecentExam[]>([])
+  const [data, setData] = useState<DashboardSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [statsRes, examsRes, feeStatsRes] = await Promise.all([
-        api.get<DashboardStats>('/stats'),
-        api.get<{ exams: RecentExam[] }>('/exams'),
-        api.get<FeeStats>('/fees/stats')
-      ])
-      
-      // Handle different response formats
-      const statsData = (statsRes as any).data || statsRes;
-      const examsData = (examsRes as any).data?.exams || (examsRes as any).exams || [];
-      const feeData = (feeStatsRes as any).data || feeStatsRes;
-      
-      setStats(statsData)
-      setExams(Array.isArray(examsData) ? examsData.slice(0, 5) : [])
-      setFeeStats(feeData)
+      const summary = await api.get<DashboardSummary>('/summary')
+      setData(summary)
       setError(null)
     } catch (err) {
       console.error("Dashboard data fetch error:", err)
@@ -66,5 +63,17 @@ export function useDashboard() {
     return () => clearInterval(interval)
   }, [fetchDashboardData])
 
-  return { stats, feeStats, exams, loading, error, refresh: fetchDashboardData }
+  return { 
+    stats: data?.stats || null, 
+    feeStats: data?.fees || null, 
+    exams: data?.exams || [], 
+    counts: {
+      leaves: data?.pending_leaves || 0,
+      atRisk: data?.at_risk_count || 0,
+      promotions: data?.pending_promotions || 0
+    },
+    loading, 
+    error, 
+    refresh: fetchDashboardData 
+  }
 }

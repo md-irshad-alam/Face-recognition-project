@@ -106,12 +106,12 @@ export default function StudentsPage() {
             <SC.Title>Student Enrollment</SC.Title>
             <SC.Subtitle>Manage all institutional student records and biometric data.</SC.Subtitle>
           </SC.HeaderLeft>
-          <SC.HeaderActions>
+         
             <SC.PrimaryButton onClick={() => setShowOnboard(true)}>
               <RiAddLine size={20} />
               <span>Onboard Student</span>
             </SC.PrimaryButton>
-          </SC.HeaderActions>
+          
         </SC.Header>
       </SC.PageHeaderWrapper>
 

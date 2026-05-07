@@ -23,6 +23,10 @@ export const PageSubtitle = styled.p`
   color: #64748B;
   font-weight: 500;
   margin: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const HeaderRow = styled.div`
@@ -590,6 +594,14 @@ export const DashboardHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+
+  @media (max-width: 768px) {
+    flex-direction: row; /* Keep on same row */
+    gap: 12px;
+    margin-bottom: 24px;
+    
+    h1 { font-size: 1.5rem !important; }
+  }
 `;
 
 export const HeaderActions = styled.div`
@@ -646,6 +658,7 @@ export const DeviceCard = styled.div<{ $offline?: boolean }>`
   margin-bottom: 16px;
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Use space-between as requested */
   gap: 24px;
   opacity: ${p => p.$offline ? 0.7 : 1};
   transition: border-color 0.2s;
@@ -653,9 +666,10 @@ export const DeviceCard = styled.div<{ $offline?: boolean }>`
   &:hover { border-color: #4F46E5; }
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 16px;
     gap: 16px;
+    flex-direction: column;
+    align-items: stretch;
   }
 `;
 
@@ -690,12 +704,18 @@ export const DeviceTitleLine = styled.div`
 
 export const DeviceMetrics = styled.div`
   display: flex;
+  justify-content: space-between; /* Use space-between for details */
   gap: 20px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: #64748B;
   
   div { display: flex; align-items: center; gap: 6px; }
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 `;
 
 export const DBMetric = styled.div`

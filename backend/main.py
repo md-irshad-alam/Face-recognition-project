@@ -10,17 +10,25 @@ import database
 import auth
 import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
 from dataclasses import asdict
-from routers import exams, teachers, fees, whatsapp
+from routers import exams, teachers, fees, whatsapp, auth as auth_router
+from routers import monitoring
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
 import migrate
 
 app = FastAPI(title="Face Recognition Attendance System")
 app.include_router(fees.router)
 app.include_router(whatsapp.router)
+app.include_router(auth_router.router)
+app.include_router(monitoring.router)
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,6 +121,10 @@ def get_todays_attendance_list(
 ):
     school_id = current_user.get('school_id', '')
     return database.get_todays_attendance(class_name=class_name, school_id=school_id)
+
+@app.get("/summary")
+async def get_summary(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_dashboard_summary(school_id=current_user.get("school_id", ""))
 
 @app.get("/stats")
 def get_stats(current_user: dict = Depends(auth.get_current_user)):
@@ -326,13 +338,6 @@ async def update_student(
         print(f"Update Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/fees/students")
-async def get_fees_students(current_user: dict = Depends(auth.get_current_user)):
-    return database.get_all_students_for_fees(school_id=current_user.get('school_id', ''))
-
-@app.get("/fees/stats")
-async def get_fee_stats(current_user: dict = Depends(auth.get_current_user)):
-    return database.get_fee_stats(school_id=current_user.get('school_id', ''))
 
 @app.get("/students")
 def get_students(current_user: dict = Depends(auth.get_current_user)):
@@ -613,136 +618,7 @@ from school_utils import validate_school_email, extract_school_id
 import auth
 from models import UserResponse
 
-@app.post("/auth/register")
-def register(user: UserCreate):
-    # 1. Extract school_id from email
-    try:
-        school_id = validate_school_email(user.email)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    # 2. Prevent duplicate email
-    if auth.get_user_by_email(user.email):
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    role = user.role if user.role in ('admin', 'teacher', 'hod', 'lecturer') else 'user'
-
-    # 3. Enforce one-admin-per-school
-    if role == 'admin':
-        existing_admin = auth.get_school_admin(school_id)
-        if existing_admin:
-            raise HTTPException(
-                status_code=409,
-                detail=f"An admin for school '{school_id}' already exists. "
-                       f"Each school can only have one admin account."
-            )
-
-    # 4. Create user
-    hashed_password = auth.get_password_hash(user.password)
-    success = auth.create_user(
-        email=user.email,
-        password_hash=hashed_password,
-        full_name=user.full_name,
-        school_id=school_id,
-        role=role
-    )
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to create user")
-
-    return {"message": "User created successfully", "school_id": school_id}
-
-@app.post("/auth/login", response_model=Token)
-def login(user: UserLogin):
-    if user.current_device:
-        database.update_device_status(user.current_device, name=user.email, device_type="Mobile")
-
-    db_user = auth.get_user_by_email(user.email)
-    if not db_user or not auth.verify_password(user.password, db_user['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    if user.current_device:
-        database.update_device_status(user.current_device, name=db_user['full_name'], device_type="Mobile")
-
-    school_id = db_user.get('school_id') or extract_school_id(db_user['email']) or ''
-    access_token = auth.create_access_token(data={
-        "sub": db_user['email'],
-        "role": db_user.get('role', 'user'),
-        "school_id": school_id
-    })
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_name": db_user['full_name'],
-        "user_email": db_user['email'],
-        "role": db_user.get('role', 'user') or 'user',
-        "school_id": school_id
-    }
-
-@app.post("/auth/google", response_model=Token)
-async def google_login(login_data: GoogleLogin):
-    id_info = await auth.verify_google_token(login_data.token)
-    if not id_info:
-        raise HTTPException(status_code=401, detail="Invalid Google Token")
-
-    email     = id_info.get("email")
-    name      = id_info.get("name")
-    google_id = id_info.get("sub")
-    school_id = extract_school_id(email) or ''
-
-    db_user = auth.get_user_by_email(email)
-    if not db_user:
-        success = auth.create_user(
-            email=email, password_hash=None, full_name=name,
-            school_id=school_id, google_id=google_id
-        )
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to create user")
-        db_user = {"email": email, "full_name": name, "role": "user", "school_id": school_id}
-
-    resolved_school_id = db_user.get('school_id') or school_id
-    access_token = auth.create_access_token(data={
-        "sub": email,
-        "role": db_user.get('role', 'user'),
-        "school_id": resolved_school_id
-    })
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_name": db_user.get('full_name', name),
-        "user_email": db_user.get('email', email),
-        "role": db_user.get('role', 'user') or 'user',
-        "school_id": resolved_school_id
-    }
-
-from models import UserResponse
-from fastapi import Depends
-
-@app.get("/auth/me", response_model=UserResponse)
-def get_current_user_profile(current_user: dict = Depends(auth.get_current_user)):
-    return {
-        "id": current_user['id'],
-        "email": current_user['email'],
-        "full_name": current_user['full_name'],
-        "role": current_user['role'],
-        "created_at": current_user.get('created_at')
-    }
-
-@app.post("/auth/refresh-token", response_model=Token)
-def refresh_token(current_user: dict = Depends(auth.get_current_user)):
-    """
-    Issues a fresh access token with the current role from the database.
-    Fixes stale-role issues when a user's role is changed after login.
-    """
-    access_token = auth.create_access_token(
-        data={"sub": current_user['email'], "role": current_user['role']}
-    )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user_name": current_user['full_name'],
-        "user_email": current_user['email'],
-        "role": current_user['role']
-    }
+# Note: Registration and Login are now handled in routers/auth.py
 
 
 @app.get("/leaves/me")
@@ -777,6 +653,21 @@ def apply_leave(data: dict, current_user: dict = Depends(auth.get_current_user))
     success = database.create_leave_request(teacher['id'], data)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to submit leave request")
+        
+    # Create notification for admin
+    try:
+        school_id = current_user.get('school_id', '')
+        conn = database.create_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO notifications (school_id, type, title, message)
+            VALUES (%s, 'LEAVE', 'New Leave Request', %s)
+        """, (school_id, f"{current_user.get('full_name')} has requested {data.get('leave_type')} leave."))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Failed to create leave notification: {e}")
         
     return {"message": "Leave request submitted"}
 
@@ -819,11 +710,11 @@ def get_pending_leaves(current_user: dict = Depends(auth.require_admin)):
     
     # Format dates
     for r in requests:
-        if hasattr(r['applied_at'], 'strftime'):
+        if r.get('applied_at') and hasattr(r['applied_at'], 'strftime'):
             r['applied_at'] = r['applied_at'].strftime('%Y-%m-%d %H:%M:%S')
-        if hasattr(r['start_date'], 'strftime'):
+        if r.get('start_date') and hasattr(r['start_date'], 'strftime'):
             r['start_date'] = r['start_date'].strftime('%Y-%m-%d')
-        if r['end_date'] and hasattr(r['end_date'], 'strftime'):
+        if r.get('end_date') and hasattr(r['end_date'], 'strftime'):
             r['end_date'] = r['end_date'].strftime('%Y-%m-%d')
             
     cursor.close()

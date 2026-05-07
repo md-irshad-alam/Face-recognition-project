@@ -67,3 +67,7 @@ uvicorn==0.41.0
 vine==5.1.0
 wcwidth==0.6.0
 websockets==16.0
+pyotp
+argon2-cffi
+email-validator
+dnspython

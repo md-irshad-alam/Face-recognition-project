@@ -42,7 +42,35 @@ CREATE TABLE IF NOT EXISTS users (
     google_id VARCHAR(100),
     role VARCHAR(20) DEFAULT 'user',
     school_id VARCHAR(50) NOT NULL DEFAULT '',
+    is_verified BOOLEAN DEFAULT FALSE,
+    two_factor_secret VARCHAR(100),
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS verification_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_token_hash (token_hash),
+    INDEX idx_email_token (email)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(50),
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_action (user_id, action),
+    INDEX idx_school_audit (school_id)
 );
 
 CREATE TABLE IF NOT EXISTS teachers (

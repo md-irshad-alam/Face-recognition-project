@@ -8,9 +8,12 @@ import { createPortal } from 'react-dom'
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
-  title: string
+  title: React.ReactNode
+  subtitle?: string
+  icon?: React.ReactNode
   children: React.ReactNode
   width?: string
+  padding?: string
 }
 
 const Overlay = styled.div<{ $isOpen: boolean }>`
@@ -53,20 +56,51 @@ const ModalHeader = styled.div`
   align-items: center;
   padding: 24px 32px;
   border-bottom: 1px solid #F1F5F9;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+    background: #EEF2FF;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4F46E5;
+  }
 `;
 
-const Title = styled.h3`
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0F172A;
-  margin: 0;
+const TitleArea = styled.div`
+  display: flex;
+  flex-direction: column;
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0;
+  }
+
+  span {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
 `;
 
 const CloseBtn = styled.button`
-  background: #F1F5F9;
-  border: none;
-  width: 36px;
-  height: 36px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -76,18 +110,19 @@ const CloseBtn = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: #E2E8F0;
+    background: #F1F5F9;
     color: #1E293B;
+    transform: rotate(90deg);
   }
 `;
 
-const Content = styled.div`
-  padding: 32px;
+const Content = styled.div<{ $padding?: string }>`
+  padding: ${p => p.$padding || '32px'};
   overflow-y: auto;
   flex: 1;
 `;
 
-export default function Modal({ isOpen, onClose, title, children, width }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, subtitle, icon, children, width, padding }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,10 +149,16 @@ export default function Modal({ isOpen, onClose, title, children, width }: Modal
     <Overlay $isOpen={isOpen} onClick={handleOverlayClick}>
       <ModalContainer ref={modalRef} $width={width}>
         <ModalHeader>
-          <Title>{title}</Title>
-          <CloseBtn onClick={onClose}><RiCloseLine size={24} /></CloseBtn>
+          <div className="header-left">
+            {icon && <div className="icon-box">{icon}</div>}
+            <TitleArea>
+              {typeof title === 'string' ? <h3>{title}</h3> : title}
+              {subtitle && <span>{subtitle}</span>}
+            </TitleArea>
+          </div>
+          <CloseBtn onClick={onClose}><RiCloseLine size={20} /></CloseBtn>
         </ModalHeader>
-        <Content>
+        <Content $padding={padding}>
           {children}
         </Content>
       </ModalContainer>

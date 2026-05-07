@@ -122,8 +122,8 @@ padding-left:0.8rem;
   gap: 20px;
 
   @media (max-width: 900px) {
-    flex-direction: column;
-    align-items: stretch;
+    
+    align-items:center;
     gap: 1.5rem;
   }
 `;
@@ -140,6 +140,9 @@ export const Title = styled.h1`
   color: #0F172A;
   margin: 0;
   letter-spacing: -0.025em;
+  @media (max-width: 900px) {
+    font-size: 2rem;
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -147,24 +150,20 @@ export const Subtitle = styled.p`
   color: #64748B;
   margin: 0;
   font-weight: 500;
-`;
-
-export const HeaderActions = styled.div`
-  display: flex;
-  gap: 12px;
-  
-  @media (max-width: 640px) {
-    flex-direction: column;
-    button { width: 100%; justify-content: center; }
+  @media (max-width: 900px) {
+    display: none;
+    
   }
 `;
+
+
 
 export const PrimaryButton = styled.button`
   background: #4F46E5;
   color: white;
   border: none;
   border-radius: 12px;
-  padding: 0.75rem 1.5rem;
+  padding: 12px 18px;
   font-weight: 700;
   font-size: 0.9375rem;
   cursor: pointer;

@@ -21,7 +21,8 @@ load_dotenv()
 
 SECRET_KEY                  = os.getenv("SECRET_KEY", "YOUR_SUPER_SECRET_KEY")
 ALGORITHM                   = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080
+REFRESH_TOKEN_EXPIRE_DAYS   = 7
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID")
 
@@ -162,9 +163,98 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 
 
 def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in ("admin", "ORG_ADMIN"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Operation not permitted. Admin access required.",
         )
     return current_user
+
+
+# ── Audit Logging ──────────────────────────────────────────────────────────────
+
+def log_action(user_id: Optional[int], action: str, details: str, school_id: str, ip_address: Optional[str] = None):
+    conn = database.create_connection()
+    if not conn:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO audit_logs (user_id, action, details, school_id, ip_address) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (user_id, action, details, school_id, ip_address),
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"Audit log error: {e}")
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+
+
+# ── 2FA Helpers ────────────────────────────────────────────────────────────────
+import pyotp
+
+def generate_totp_secret():
+    return pyotp.random_base32()
+
+def verify_totp(secret: str, token: str):
+    totp = pyotp.TOTP(secret)
+    return totp.verify(token)
+
+import random
+import string
+
+def generate_email_otp(length=6):
+    return ''.join(random.choices(string.digits, k=length))
+
+
+# ── Refresh Token ──────────────────────────────────────────────────────────────
+
+def create_refresh_token(data: dict):
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode = data.copy()
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+# ── Account Security ───────────────────────────────────────────────────────────
+
+def increment_failed_login(email: str):
+    conn = database.create_connection()
+    if not conn: return
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT failed_login_attempts FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        if user:
+            attempts = user['failed_login_attempts'] + 1
+            locked_until = None
+            if attempts >= 5:
+                locked_until = datetime.utcnow() + timedelta(minutes=15)
+            
+            cursor.execute(
+                "UPDATE users SET failed_login_attempts = %s, locked_until = %s WHERE email = %s",
+                (attempts, locked_until, email)
+            )
+            conn.commit()
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+
+def reset_failed_login(email: str):
+    conn = database.create_connection()
+    if not conn: return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE email = %s",
+            (email,)
+        )
+        conn.commit()
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()

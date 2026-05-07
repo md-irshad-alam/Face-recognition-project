@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 
@@ -15,94 +15,170 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  setUser: (user: User | null) => void;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => void;
   refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USER_STORAGE_KEY = 'visio_user';
+const SESSION_EXPIRY_KEY = 'visio_session_expiry';
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function loadStoredUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
+    if (!expiry || Date.now() > parseInt(expiry)) {
+      // Session expired — clear everything
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(SESSION_EXPIRY_KEY);
+      localStorage.removeItem('token');
+      return null;
+    }
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUser(user: User | null) {
+  if (typeof window === 'undefined') return;
+  if (user) {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    // Refresh 7-day expiry window on every save
+    localStorage.setItem(SESSION_EXPIRY_KEY, String(Date.now() + SESSION_DURATION_MS));
+  } else {
+    localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem(SESSION_EXPIRY_KEY);
+    localStorage.removeItem('token');
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Load user from localStorage immediately (no flash)
+  const [user, setUserState] = useState<User | null>(() => loadStoredUser());
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const validationDone = useRef(false);
 
-  // Unified session hydration logic - now primarily used during initialization or forced refresh
-  const refreshSession = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      // Get fresh session data with latest role from DB
-      // Note: We use /auth/refresh-token to ensure we get a new token with updated role if needed
-      const data = await api.post<any>('/auth/refresh-token');
-      if (data && data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        setUser({
-          id: data.user_email,
-          full_name: data.user_name,
-          email: data.user_email,
-          role: data.role,
-          school_id: data.school_id
-        });
-      }
-    } catch (error: any) {
-      console.error("Session refresh failed:", error);
-      if (error.status === 401) {
-        logout();
-      }
-    }
-  }, [router]);
-
-  // Initial load: Only runs once when the app starts or page is reloaded
-  useEffect(() => {
-    async function initAuth() {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          // Fetch current user data from server on reload to ensure role is fresh
-          const data = await api.get<User>('/auth/me'); 
-          setUser(data);
-        } catch (error) {
-          console.error("Auth initialization failed:", error);
-          localStorage.removeItem('token');
-        }
-      }
-      setLoading(false);
-    }
-    
-    initAuth();
+  const setUser = useCallback((u: User | null) => {
+    setUserState(u);
+    saveUser(u);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const logout = useCallback(async () => {
     try {
-      const data = await api.post<any>('/auth/login', { email, password });
-      if (data && data.access_token) {
-        localStorage.setItem('token', data.access_token);
-        setUser({
-          id: data.user_email,
-          full_name: data.user_name,
-          email: data.user_email,
-          role: data.role,
-          school_id: data.school_id
-        });
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
-  };
-
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setUser(null);
+      await api.post('/auth/logout');
+    } catch { /* ignore */ }
+    setUserState(null);
+    saveUser(null);
     router.push('/login');
   }, [router]);
 
+  const refreshSession = useCallback(async () => {
+    try {
+      const data = await api.post<any>('/auth/refresh');
+      if (data?.access_token) {
+        localStorage.setItem('token', data.access_token);
+        // Try to get fresh user data
+        try {
+          const userData = await api.get<User>('/auth/me');
+          setUser(userData);
+          return;
+        } catch { /* use existing stored user */ }
+      }
+    } catch {
+      // Refresh failed — clear session
+      setUser(null);
+    }
+  }, [setUser]);
+
+  useEffect(() => {
+    if (validationDone.current) return;
+    validationDone.current = true;
+
+    async function validateSession() {
+      const storedUser = loadStoredUser();
+
+      if (!storedUser) {
+        // No valid local session — try refresh cookie as last resort
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // Definitely not logged in
+          setLoading(false);
+          return;
+        }
+        // Has a token, validate it
+        try {
+          const userData = await api.get<User>('/auth/me');
+          setUser(userData);
+        } catch {
+          // Token dead and no stored user — logged out
+          saveUser(null);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // We have a stored user, show them immediately (already set in useState initializer)
+      setLoading(false);
+
+      // Silently validate/refresh in background without blocking UI
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const userData = await api.get<User>('/auth/me');
+          // Update stored user with fresh data (in case role/name changed)
+          setUser(userData);
+        } catch {
+          // Access token expired — try refresh
+          try {
+            const data = await api.post<any>('/auth/refresh');
+            if (data?.access_token) {
+              localStorage.setItem('token', data.access_token);
+              const userData = await api.get<User>('/auth/me');
+              setUser(userData);
+            } else {
+              // Full session dead
+              setUser(null);
+            }
+          } catch {
+            // Refresh also failed — session completely dead
+            setUser(null);
+          }
+        }
+      } else {
+        // No token but stored user exists — try refresh cookie
+        try {
+          const data = await api.post<any>('/auth/refresh');
+          if (data?.access_token) {
+            localStorage.setItem('token', data.access_token);
+            try {
+              const userData = await api.get<User>('/auth/me');
+              setUser(userData);
+            } catch { /* keep stored user */ }
+          }
+        } catch {
+          // No refresh cookie either — clear
+          setUser(null);
+        }
+      }
+    }
+
+    validateSession();
+  }, [setUser]);
+
+  const login = useCallback(async (email: string, password: string): Promise<any> => {
+    const data = await api.post<any>('/auth/login', { email, password });
+    return data;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshSession }}>
+    <AuthContext.Provider value={{ user, loading, setUser, login, logout, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

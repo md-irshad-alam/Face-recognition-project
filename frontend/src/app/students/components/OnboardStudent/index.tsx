@@ -157,25 +157,8 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
       />
 
       <SC.Header>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <span style={{ 
-              background: '#EEF2FF', 
-              color: '#4F46E5', 
-              padding: '4px 12px', 
-              borderRadius: '8px', 
-              fontSize: '0.75rem', 
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              marginBottom: '12px',
-              display: 'inline-block'
-            }}>{isEditMode ? 'Modify Entry' : 'New Enrollment'}</span>
+        <div style={{ display: 'flex',width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <SC.Title>{isEditMode ? 'Edit' : 'Onboard'} Student</SC.Title>
-            <SC.Subtitle>
-              {isEditMode ? 'Update academic and biometric data for this student.' : 'Initialize a student\'s academic journey by capturing essential administrative data.'}
-            </SC.Subtitle>
-          </div>
           <UIBackButton onClick={onClear}>
             Back to List
           </UIBackButton>

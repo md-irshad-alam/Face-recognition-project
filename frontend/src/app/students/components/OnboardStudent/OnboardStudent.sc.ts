@@ -5,7 +5,7 @@ export const Container = styled.div`
   flex-direction: column;
   gap: 24px;
   height: 100vh;
-  padding: 2rem;
+  // padding: 2rem;
   background: #f8fafc;
   overflow: hidden;
   animation: fadeIn 0.3s ease-in-out;
@@ -13,7 +13,7 @@ export const Container = styled.div`
   @media (max-width: 1024px) {
     height: auto;
     min-height: 100vh;
-    padding: 1.5rem;
+    padding: 0;
     overflow: visible;
   }
 
@@ -25,7 +25,8 @@ export const Container = styled.div`
 
 export const Header = styled.div`
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
 `;
 

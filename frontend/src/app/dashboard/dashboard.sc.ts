@@ -105,22 +105,28 @@ export const StatCard = styled.div`
   padding: 24px;
   border: 1px solid #E2E8F0;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   gap: 16px;
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: 480px) {
-    padding: 16px;
-    gap: 12px;
+    padding: 20px;
     border-radius: 20px;
   }
 
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-    border-color: #4F46E550;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.05);
+    border-color: #4F46E530;
+  }
+
+  .sparkline-box {
+    width: 100px;
+    height: 50px;
+    flex-shrink: 0;
   }
 `;
 
@@ -139,20 +145,20 @@ export const StatIconBox = styled.div<{ $color: string }>`
 export const StatInfo = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
   
   label {
-    font-size: 0.75rem;
-    font-weight: 800;
-    color: #94A3B8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #64748B;
+    margin-bottom: 4px;
   }
 
   h2 {
-    font-size: 2rem;
-    font-weight: 900;
-    color: #0F172A;
-    margin: 4px 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1E293B;
+    margin: 0;
     letter-spacing: -0.02em;
   }
 `;
@@ -375,6 +381,15 @@ export const LegendItem = styled.div`
   }
 `;
 
+export const PieChartWrapper = styled.div`
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px 0;
+`;
+
 
 
 export const ModalAlertList = styled.div`
@@ -407,4 +422,142 @@ export const ActionBtn = styled.button<{ $variant: 'approve' | 'reject' }>`
   border: none;
   background: ${p => p.$variant === 'approve' ? '#10B981' : '#F1F5F9'};
   color: ${p => p.$variant === 'approve' ? 'white' : '#64748B'};
+`;
+
+// --- Leave Modal Styled Components ---
+export const LeaveModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .icon-box {
+    width: 42px;
+    height: 42px;
+    background: #EEF2FF;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4F46E5;
+  }
+
+  .title-area {
+    h3 { font-size: 1.125rem; font-weight: 800; color: #1E293B; margin: 0; }
+    span { font-size: 0.6875rem; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; }
+  }
+`;
+export const ProfileName = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+`;
+export const LeaveRequestCard = styled.div`
+  background: #F4F7FF;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  height:180px;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #4F46E530;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .profile {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
+    h4 { font-size: 1rem; font-weight: 800; color: #1E293B; margin: 0; }
+    .badge-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding-top: 12px;
+    border-top: 1px solid #E2E8F0;
+  }
+
+  .info-group {
+    label { display: block; font-size: 0.625rem; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    span { font-size: 0.8125rem; font-weight: 700; color: #1E293B; }
+    p { font-size: 0.8125rem; color: #475569; margin: 4px 0 0; line-height: 1.5; }
+  }
+`;
+
+export const LeaveTypeChip = styled.span<{ $type?: string }>`
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: ${p => p.$type === 'sick' ? '#FEF2F2' : '#F5F3FF'};
+  color: ${p => p.$type === 'sick' ? '#EF4444' : '#7C3AED'};
+`;
+
+export const LeaveActionBtn = styled.button<{ $variant: 'approve' | 'reject' }>`
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  
+  background: ${p => p.$variant === 'approve' ? '#4F46E5' : 'white'};
+  color: ${p => p.$variant === 'approve' ? 'white' : '#64748B'};
+  border: ${p => p.$variant === 'approve' ? 'none' : '1.5px solid #E2E8F0'};
+
+  &:hover {
+    background: ${p => p.$variant === 'approve' ? '#4338CA' : '#F8FAFC'};
+    transform: translateY(-1px);
+  }
+`;
+
+export const LeaveModalFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid #F1F5F9;
+  margin-top: 12px;
+
+  .history-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748B;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    &:hover { color: #4F46E5; }
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 16px;
+    span { font-size: 0.75rem; font-weight: 800; color: #4F46E5; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+  }
 `;

@@ -195,12 +195,11 @@ export default function OnboardWizard({ onSubmit, loading }: Props) {
               <FieldRow>
                 <FieldGroup>
                   <FieldLabel>
-                    Email Address * 
-                    {schoolCode && <span style={{fontSize:'0.7rem', color:'#6366F1', marginLeft:6}}>(Format: name.{schoolCode}@domain.com)</span>}
+                    Email Address *
                   </FieldLabel>
                   <FieldInput
                     type="email"
-                    placeholder={schoolCode ? `name.${schoolCode}@gmail.com` : "teacher@school.edu"}
+                    placeholder="teacher@example.com"
                     value={form.email}
                     onChange={e => set('email', e.target.value)}
                   />

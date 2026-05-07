@@ -277,7 +277,7 @@ export const Table = styled.table`
 export const Th = styled.th`
   padding: 1.25rem 2rem;
   font-size: 0.6875rem;
-  font-weight: 800;
+  font-weight: 400;
   color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -288,13 +288,13 @@ export const Td = styled.td`
   padding: 1.25rem 2rem;
   font-size: 0.875rem;
   color: #1E293B;
-  font-weight: 500;
+  font-weight: 400;
   border-bottom: 1px solid #F1F5F9;
 `;
 
 export const StudentCell = styled.div`
-  .name { font-weight: 800; color: #1E293B; display: block; }
-  .id { font-size: 0.75rem; color: #94A3B8; font-weight: 600; margin-top: 2px; }
+  .name { font-weight: 400; color: #1E293B; display: block; }
+  .id { font-size: 0.75rem; color: #94A3B8; font-weight: 400; margin-top: 2px; }
 `;
 
 export const StatusPill = styled.span<{ $status: 'Paid' | 'Unpaid' | 'Overdue' }>`
@@ -388,6 +388,9 @@ export const Tab = styled.button<{ $active?: boolean }>`
   margin-bottom: -2px;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
   @media (max-width: 480px) {
     font-size: 0.8125rem;
@@ -396,5 +399,31 @@ export const Tab = styled.button<{ $active?: boolean }>`
 
   &:hover {
     color: #4F46E5;
+  }
+`;
+
+export const MenuButton = styled.button`
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    background: #F8FAFC;
+    color: #4F46E5;
+    border-color: #4F46E5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;

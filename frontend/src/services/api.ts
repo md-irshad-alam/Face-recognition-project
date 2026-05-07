@@ -11,6 +11,18 @@ interface RequestOptions extends RequestInit {
 }
 
 class ApiClient {
+  private isRefreshing = false;
+  private refreshSubscribers: ((token: string) => void)[] = [];
+
+  private subscribeTokenRefresh(cb: (token: string) => void) {
+    this.refreshSubscribers.push(cb);
+  }
+
+  private onTokenRefreshed(token: string) {
+    this.refreshSubscribers.map(cb => cb(token));
+    this.refreshSubscribers = [];
+  }
+
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = new URL(`${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
     
@@ -32,7 +44,8 @@ class ApiClient {
 
     const config: RequestInit = {
       ...options,
-      headers
+      headers,
+      credentials: 'include' // Crucial for HTTP-only cookies
     };
 
     try {
@@ -40,14 +53,44 @@ class ApiClient {
       
       // Handle non-2xx responses
       if (!response.ok) {
-        if (response.status === 401) {
-          // Automatic logout on token expiry, but don't redirect if already on login
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-            const currentPath = window.location.pathname + window.location.search;
-            localStorage.removeItem('token');
-            window.location.href = `/login?callbackUrl=${encodeURIComponent(currentPath)}`;
+        if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+          // Attempt refresh
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
+            try {
+              const refreshData = await this.post<any>('/auth/refresh');
+              if (refreshData && refreshData.access_token) {
+                localStorage.setItem('token', refreshData.access_token);
+                this.isRefreshing = false;
+                this.onTokenRefreshed(refreshData.access_token);
+                // Retry the original request
+                return this.request<T>(endpoint, options);
+              }
+            } catch (refreshError) {
+              this.isRefreshing = false;
+              // If refresh fails, redirect to login (unless it's a public page)
+              if (typeof window !== 'undefined') {
+                const isPublicRoute = window.location.pathname === '/login' || 
+                                    window.location.pathname === '/signup' || 
+                                    window.location.pathname.startsWith('/public-profile/');
+                
+                if (!isPublicRoute) {
+                  localStorage.removeItem('token');
+                  window.location.href = `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+                }
+              }
+              throw refreshError;
+            }
+          } else {
+            // Wait for refresh to complete
+            return new Promise((resolve) => {
+              this.subscribeTokenRefresh((newToken) => {
+                resolve(this.request<T>(endpoint, options));
+              });
+            });
           }
         }
+        
         const errorData = await response.json().catch(() => ({ message: 'An error occurred' }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }

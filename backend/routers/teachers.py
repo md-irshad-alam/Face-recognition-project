@@ -34,19 +34,20 @@ async def add_teacher(
     office_time: str             = Form(''),
     assigned_classes: str        = Form('[]'),
     notifications: str           = Form('[]'),
+    password: Optional[str]      = Form(None),
     photo: UploadFile            = File(None),
     current_user: dict           = Depends(auth.require_admin),
 ):
     school_id = current_user.get('school_id', '')
     
-    # Validate teacher email contains the same school code
-    teacher_school_id = school_utils.extract_school_id(email)
-    if teacher_school_id != school_id:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Teacher email must include your school code '{school_id.upper()}'. "
-                   f"Correct format: name.{school_id}@domain.com"
-        )
+    # Validate teacher email contains the same school code (REMOVED per request)
+    # teacher_school_id = school_utils.extract_school_id(email)
+    # if teacher_school_id != school_id:
+    #     raise HTTPException(
+    #         status_code=400, 
+    #         detail=f"Teacher email must include your school code '{school_id.upper()}'. "
+    #                f"Correct format: name.{school_id}@domain.com"
+    #     )
 
     try:
         existing = database.get_teacher_by_id(id)
@@ -94,7 +95,10 @@ async def add_teacher(
 
         # Create user account with the supplied role
         resolved_role = role if role in ('admin', 'teacher', 'hod', 'lecturer') else 'teacher'
-        hashed_pwd = auth.get_password_hash(id)
+        # Use provided password if available, otherwise fallback to Staff ID
+        login_password = password if password else id
+        hashed_pwd = auth.get_password_hash(login_password)
+        
         auth.create_user(
             email=email, password_hash=hashed_pwd,
             full_name=f"{first_name} {last_name}",

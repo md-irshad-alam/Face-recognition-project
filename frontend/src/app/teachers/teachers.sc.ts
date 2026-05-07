@@ -85,12 +85,18 @@ export const PageTitle = styled.h1`
   color: ${p => p.theme.colors.textPrimary};
   margin: 0;
   letter-spacing: -0.03em;
+  @media (max-width: ${p => p.theme.breakpoints.xl}) {
+    font-size: 1.75rem;
+  }
 `
 
 export const PageSubtitle = styled.p`
   font-size: 1rem;
   color: ${p => p.theme.colors.textSecondary};
   margin: 0;
+  @media (max-width: ${p => p.theme.breakpoints.xl}) {
+    display: none;
+  }
 `
 
 export const HeaderActions = styled.div`
@@ -745,7 +751,7 @@ export const PrimaryBtn = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 28px;
+  padding: 12px 18px;
   border-radius: ${p => p.theme.radius.lg};
   font-size: 0.9375rem;
   font-weight: 700;

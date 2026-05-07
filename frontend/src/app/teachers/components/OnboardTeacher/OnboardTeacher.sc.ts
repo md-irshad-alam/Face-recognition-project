@@ -45,6 +45,9 @@ export const Title = styled.h1`
     font-weight: 400;
     margin-left: 8px;
   }
+  @media (max-width: ${p => p.theme.breakpoints.xl}) {
+    font-size: 2rem;
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -53,6 +56,9 @@ export const Subtitle = styled.p`
   margin: 0;
   max-width: 650px;
   line-height: 1.6;
+  @media (max-width: ${p => p.theme.breakpoints.xl}) {
+    display: none;
+  }
 `;
 
 export const StepperContainer = styled.div`
