@@ -13,6 +13,7 @@ export default function ThemeRegistry({ children }: { children: React.ReactNode 
   const isPublicPage = pathname === '/login' || 
                        pathname === '/signup' || 
                        pathname === '/about' || 
+                       pathname === '/auth/verify' ||
                        pathname.startsWith('/public-profile/');
 
   if (isPublicPage) {
