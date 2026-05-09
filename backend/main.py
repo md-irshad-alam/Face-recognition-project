@@ -21,10 +21,9 @@ app.include_router(whatsapp.router)
 app.include_router(auth_router.router)
 app.include_router(monitoring.router)
 
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Pull origins from environment variable or fallback to localhost
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+origins = [origin.strip() for origin in allowed_origins_env.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
