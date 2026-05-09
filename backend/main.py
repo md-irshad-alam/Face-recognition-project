@@ -21,9 +21,11 @@ app.include_router(whatsapp.router)
 app.include_router(auth_router.router)
 app.include_router(monitoring.router)
 
-# Pull origins from environment variable or fallback to localhost
-allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
-origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+# Pull origins from environment variable or fallback to production/localhost defaults
+# Standardizing origins: no trailing slashes
+default_origins = "https://visio.school,https://www.visio.school,http://localhost:3000,http://127.0.0.1:3000"
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", default_origins)
+origins = [origin.strip().rstrip("/") for origin in allowed_origins_env.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +33,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ─── WebSocket Connection Manager ─────────────────────────────────────────────
