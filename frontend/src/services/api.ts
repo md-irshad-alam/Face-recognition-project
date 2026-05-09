@@ -72,6 +72,7 @@ class ApiClient {
               if (typeof window !== 'undefined') {
                 const isPublicRoute = window.location.pathname === '/login' || 
                                     window.location.pathname === '/signup' || 
+                                    window.location.pathname === '/auth/verify' ||
                                     window.location.pathname.startsWith('/public-profile/');
                 
                 if (!isPublicRoute) {
