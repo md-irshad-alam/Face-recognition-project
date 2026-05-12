@@ -32,10 +32,10 @@ def _create_notification(conn, school_id: str, notif_type: str, title: str,
         print(f"[Notify] Error: {e}")
 
 # ── Helper: send WhatsApp alert (non-blocking) ─────────────────────────────────
-def _whatsapp_alert(phone: str, message: str):
+def _whatsapp_alert(phone: str, message: str, school_id: str):
     try:
         from tasks import send_whatsapp_message
-        send_whatsapp_message.delay(phone, message)
+        send_whatsapp_message.delay(phone, message, session_name=school_id)
     except Exception as e:
         print(f"[WhatsApp] Could not queue: {e}")
 
@@ -212,7 +212,7 @@ def _do_attendance_check(school_id: str):
                         f"⚠️ {flag['reason']}\n\n"
                         f"Please contact the school administration for assistance.\nThank you."
                     )
-                    _whatsapp_alert(phone, msg)
+                    _whatsapp_alert(phone, msg, school_id)
 
                     cursor.execute("UPDATE student_flags SET notified=TRUE WHERE student_id=%s AND school_id=%s AND flag_type=%s AND is_resolved=FALSE",
                                    (sid, school_id, flag["type"]))

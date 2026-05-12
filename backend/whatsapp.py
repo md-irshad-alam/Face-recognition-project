@@ -4,39 +4,37 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
-EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY')
-EVOLUTION_INSTANCE = os.getenv('EVOLUTION_INSTANCE', 'smart_school')
+WPP_SERVER_URL = os.getenv('WPP_SERVER_URL', "http://127.0.0.1:21465")
+WPP_SECRET_KEY = os.getenv('WPP_SECRET_KEY', "THISISMYSECURETOKEN")
+WPP_SESSION_NAME = os.getenv('WPP_SESSION_NAME', 'smart_school')
 
-def send_whatsapp_notification(number, message):
+def send_whatsapp_notification(number, message, school_id="default"):
     """
-    Send a WhatsApp message via Evolution API.
-    :param number: Recipient phone number (with country code, no + or spaces)
-    :param message: The text message to send
+    Send a WhatsApp message via WPPConnect Server.
     """
-    if not EVOLUTION_API_URL or not EVOLUTION_API_KEY:
-        print("WhatsApp notification skipped: API credentials not configured.")
+    if not WPP_SERVER_URL or not WPP_SECRET_KEY:
         return False
 
-    url = f"{EVOLUTION_API_URL}/message/sendText/{EVOLUTION_INSTANCE}"
+    url = f"{WPP_SERVER_URL}/api/{school_id}/send-message"
     
     headers = {
         'Content-Type': 'application/json',
-        'apikey': EVOLUTION_API_KEY
+        'Authorization': f'Bearer {WPP_SECRET_KEY}'
     }
     
-    # Ensure number is in correct format (remove +, spaces, dashes)
+    # Clean and format phone number (default 91 for India)
     clean_number = "".join(filter(str.isdigit, str(number)))
+    if len(clean_number) == 10:
+        clean_number = "91" + clean_number
     
     payload = {
-        "number": clean_number,
-        "text": message
+        "phone": clean_number,
+        "message": message
     }
     
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=10)
         response.raise_for_status()
-        print(f"WhatsApp notification sent to {clean_number}")
         return True
     except Exception as e:
         print(f"Failed to send WhatsApp notification: {e}")

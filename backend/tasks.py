@@ -16,37 +16,39 @@ celery_app = Celery("tasks", broker=CELERY_BROKER_URL)
 MSG91_AUTH_KEY = os.getenv("MSG91_AUTH_KEY")
 MSG91_SENDER_ID = os.getenv("MSG91_SENDER_ID", "SCHOOL")
 
-# WhatsApp Evolution API Config
-EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://127.0.0.1:8085")
-EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY", "your_api_key")
-EVOLUTION_INSTANCE = os.getenv("EVOLUTION_INSTANCE", "MainInstance")
+# WhatsApp WPPConnect Server Config
+WPP_SERVER_URL = os.getenv("WPP_SERVER_URL", "http://127.0.0.1:21465")
+WPP_SECRET_KEY = os.getenv("WPP_SECRET_KEY", "THISISMYSECURETOKEN")
+WPP_SESSION_NAME = os.getenv("WPP_SESSION_NAME", "smart_school")
 
 @celery_app.task(name="send_whatsapp_message")
-def send_whatsapp_message(phone, message):
+def send_whatsapp_message(phone, message, session_name="default"):
     """
-    Sends a WhatsApp message using Evolution API v2.
-    Solo messages are sent instantly.
+    Sends a WhatsApp message using WPPConnect Server.
     """
-    print(f"Sending WhatsApp to {phone}: {message}")
+    print(f"Sending WhatsApp to {phone} using session {session_name}: {message}")
     
-    url = f"{EVOLUTION_API_URL}/message/sendText/{EVOLUTION_INSTANCE}"
+    url = f"{WPP_SERVER_URL}/api/{session_name}/send-message"
     headers = {
-        "apikey": EVOLUTION_API_KEY,
+        "Authorization": f"Bearer {WPP_SECRET_KEY}",
         "Content-Type": "application/json"
     }
+    
+    # Clean phone number and ensure country code (default to 91 for India if 10 digits)
+    clean_number = "".join(filter(str.isdigit, str(phone)))
+    if len(clean_number) == 10:
+        clean_number = "91" + clean_number
+    
     payload = {
-        "number": phone,
-        "text": message
+        "phone": clean_number,
+        "message": message
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
         response.raise_for_status()
-        print(f"✅ WhatsApp message sent to {phone}")
+        print(f"✅ WhatsApp message sent to {phone} via session {session_name}")
         return response.json()
-    except requests.exceptions.ConnectionError:
-        print(f"❌ WhatsApp API Error: Could not connect to Evolution API at {EVOLUTION_API_URL}. Is Docker running?")
-        return {"status": "error", "message": "API Connection Refused"}
     except Exception as e:
         print(f"❌ WhatsApp API Error: {e}")
         return {"status": "error", "message": str(e)}

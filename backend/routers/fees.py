@@ -316,7 +316,7 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
 
         try:
             from tasks import send_whatsapp_message
-            send_whatsapp_message.delay(phone, message)
+            send_whatsapp_message.delay(phone, message, session_name=current_user.get("school_id", "default"))
         except Exception:
             pass
 
@@ -401,7 +401,7 @@ async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
             )
             try:
                 from tasks import send_whatsapp_message
-                send_whatsapp_message.delay(phone, msg)
+                send_whatsapp_message.delay(phone, msg, session_name=school_id)
             except Exception:
                 pass
 

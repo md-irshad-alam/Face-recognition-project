@@ -134,6 +134,16 @@ export const HeaderLeft = styled.div`
   gap: 8px;
 `;
 
+export const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    gap: 12px;
+  }
+`;
+
 export const Title = styled.h1`
   font-size: 2.5rem;
   font-weight: 800;

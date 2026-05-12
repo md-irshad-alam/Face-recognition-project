@@ -4,16 +4,18 @@ import React, { useEffect, useState } from 'react'
 import { 
   RiAddLine, RiSearchLine, RiFilterLine, RiUserAddLine, 
   RiArrowLeftLine, RiArrowRightLine, RiDeleteBinLine, RiEditLine,
-  RiCheckLine, RiCloseLine
+  RiCheckLine, RiCloseLine,
+  RiUploadCloud2Line
 } from 'react-icons/ri'
 import { useRouter } from 'next/navigation'
 import { useStudents, Student } from '@/hooks/useStudents'
 import { toast } from 'react-hot-toast'
-import * as SC from './students.sc'
+
 import OnboardStudent from './components/OnboardStudent'
 import StudentProfile from './components/StudentProfile'
+import BulkOnboard from './components/BulkOnboard'
 import { useSearchParams } from 'next/navigation'
-
+import * as SC from './students.sc'
 const PAGE_SIZE = 6
 
 export default function StudentsPage() {
@@ -24,6 +26,7 @@ export default function StudentsPage() {
   const [filter, setFilter] = useState('All')
   const [page, setPage] = useState(1)
   const [showOnboard, setShowOnboard] = useState(false)
+  const [showBulk, setShowBulk] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
 
@@ -106,14 +109,25 @@ export default function StudentsPage() {
             <SC.Title>Student Enrollment</SC.Title>
             <SC.Subtitle>Manage all institutional student records and biometric data.</SC.Subtitle>
           </SC.HeaderLeft>
-         
+          <SC.HeaderRight>
+            <SC.SecondaryButton onClick={() => setShowBulk(true)}>
+              <RiUploadCloud2Line size={20} />
+              <span>Bulk Onboard</span>
+            </SC.SecondaryButton>
             <SC.PrimaryButton onClick={() => setShowOnboard(true)}>
               <RiAddLine size={20} />
               <span>Onboard Student</span>
             </SC.PrimaryButton>
-          
+          </SC.HeaderRight>
         </SC.Header>
       </SC.PageHeaderWrapper>
+
+      {showBulk && (
+        <BulkOnboard 
+          onClose={() => setShowBulk(false)} 
+          onSuccess={() => { setShowBulk(false); fetchStudents(); }} 
+        />
+      )}
 
       <SC.ScrollableContent>
         <SC.StatsGrid>
