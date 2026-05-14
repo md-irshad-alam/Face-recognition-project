@@ -332,7 +332,11 @@ export default function FeesPage() {
       </SC.Header>
 
       {/* Stats Strip */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:16 }}>
+      <div style={{ 
+        display:'grid', 
+        gridTemplateColumns:'repeat(auto-fit, minmax(calc(50% - 8px), 1fr))', 
+        gap:16 
+      }}>
         {[
           { label:'Total Invoices', val: stats.total, icon:<RiFileTextLine size={20}/>, color:'#4F46E5', bg:'#EEF2FF' },
           { label:'Paid', val: stats.paid, icon:<RiCheckboxCircleLine size={20}/>, color:'#10B981', bg:'#F0FDF4' },
@@ -341,12 +345,12 @@ export default function FeesPage() {
           { label:'Collected', val:`₹${stats.totalCollected.toLocaleString('en-IN',{maximumFractionDigits:0})}`, icon:<RiMoneyDollarCircleLine size={20}/>, color:'#10B981', bg:'#F0FDF4' },
           { label:'Outstanding', val:`₹${stats.totalDue.toLocaleString('en-IN',{maximumFractionDigits:0})}`, icon:<RiErrorWarningLine size={20}/>, color:'#EF4444', bg:'#FEF2F2' },
         ].map(c => (
-          <div key={c.label} style={{ background:'white', borderRadius:20, padding:'20px 24px', border:'1px solid #F1F5F9' }}>
+          <div key={c.label} style={{ background:'white', borderRadius:20, padding:'20px 24px', border:'1px solid #F1F5F9', minWidth: 0 }}>
             <div style={{ width:40,height:40,borderRadius:12,background:c.bg,color:c.color,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12 }}>
               {c.icon}
             </div>
             <p style={{ margin:0, fontSize:'0.75rem', fontWeight:700, color:'#94A3B8', textTransform:'uppercase' }}>{c.label}</p>
-            <p style={{ margin:'4px 0 0', fontSize:'1.5rem', fontWeight:900, color:'#0F172A' }}>{c.val}</p>
+            <p style={{ margin:'4px 0 0', fontSize:'clamp(1rem, 5vw, 1.5rem)', fontWeight:900, color:'#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.val}</p>
           </div>
         ))}
       </div>
@@ -359,34 +363,34 @@ export default function FeesPage() {
         <>
           {/* Filters */}
           <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
-            <SC.Select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)}>
+            <SC.Select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)} style={{ flex: '1 1 100px' }}>
               {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
             </SC.Select>
-            <SC.Select value={filterYear} onChange={e=>setFilterYear(+e.target.value)}>
+            <SC.Select value={filterYear} onChange={e=>setFilterYear(+e.target.value)} style={{ flex: '1 1 100px' }}>
               {years.map(y=><option key={y} value={y}>{y}</option>)}
             </SC.Select>
-            <SC.Select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+            <SC.Select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ flex: '2 1 150px' }}>
               <option value=''>All Status</option>
               <option value='PAID'>Paid</option>
               <option value='PARTIALLY_PAID'>Partially Paid</option>
               <option value='UNPAID'>Unpaid</option>
               <option value='OVERDUE'>Overdue</option>
             </SC.Select>
-            <button onClick={fetchInvoices} style={{ background:'#F1F5F9', border:'none', borderRadius:10, padding:'9px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontWeight:700, color:'#64748B' }}>
+            <button onClick={fetchInvoices} style={{ flex: '1 1 auto', background:'#F1F5F9', border:'none', borderRadius:10, padding:'9px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent: 'center', gap:6, fontWeight:700, color:'#64748B' }}>
               <RiRefreshLine /> Refresh
             </button>
           </div>
 
           <SC.TableContainer>
             {loading ? (
-              <div style={{ padding:60, textAlign:'center', color:'#94A3B8' }}>Loading invoices…</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>Loading invoices…</div>
             ) : invoices.length === 0 ? (
-              <div style={{ padding:60, textAlign:'center', color:'#94A3B8' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', padding: 40 }}>
                 <RiFileTextLine size={40} style={{ opacity:0.3, marginBottom:12 }} /><br/>
                 No invoices for this period. Click "Generate Invoices" to create them.
               </div>
             ) : (
-              <div style={{ overflowX:'auto' }}>
+              <div style={{ overflowX:'auto', flex: 1 }}>
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
                   <thead>
                     <tr style={{ background:'#F8FAFC' }}>

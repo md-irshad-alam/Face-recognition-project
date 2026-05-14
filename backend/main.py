@@ -220,7 +220,23 @@ def update_leave_status(request_id: int, data: dict, current_user: dict = Depend
     return {"message": "Status updated"}
 
 APK_PATH = "static/apps/app-release.apk"
+APK_VERSION = "1.0.0"
+
+@app.get("/download/app/info")
+def download_app_info():
+    """Return APK availability, version, and file size for the frontend download button."""
+    if os.path.exists(APK_PATH):
+        size_bytes = os.path.getsize(APK_PATH)
+        size_mb = round(size_bytes / (1024 * 1024), 1)
+        return {"available": True, "version": APK_VERSION, "size_mb": size_mb}
+    return {"available": False, "version": APK_VERSION, "size_mb": None}
+
 @app.get("/download/app")
 def download_app():
-    if os.path.exists(APK_PATH): return FileResponse(APK_PATH, filename="Visio.apk")
-    raise HTTPException(status_code=404)
+    if os.path.exists(APK_PATH):
+        return FileResponse(
+            APK_PATH,
+            filename=f"Visio-v{APK_VERSION}.apk",
+            media_type="application/vnd.android.package-archive",
+        )
+    raise HTTPException(status_code=404, detail="APK not found. Please contact support.")

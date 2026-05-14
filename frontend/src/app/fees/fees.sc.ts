@@ -5,7 +5,12 @@ export const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  min-height: calc(100vh - 120px);
   animation: fadeIn 0.4s ease-out;
+
+  @media (max-width: 768px) {
+    gap: 1.5rem;
+  }
 
   @media (max-width: 480px) {
     gap: 1.25rem;
@@ -226,6 +231,15 @@ export const TableContainer = styled.div`
   border: 1px solid #F1F5F9;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 450px;
+
+  @media (max-width: 768px) {
+    border-radius: 16px;
+    min-height: 400px;
+  }
 `;
 
 export const FilterBar = styled.div`

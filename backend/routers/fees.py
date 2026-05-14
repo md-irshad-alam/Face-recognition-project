@@ -4,6 +4,7 @@ from typing import Optional
 from datetime import datetime, date
 import database
 import auth
+import whatsapp
 
 router = APIRouter(prefix="/fees", tags=["Fees"])
 
@@ -307,6 +308,8 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
         if not phone:
             raise HTTPException(status_code=400, detail="Parent phone not found")
 
+        school_id = current_user.get("school_id", "default")
+
         message = (
             f"📚 *Visio School: Fee Reminder*\n\n"
             f"Dear Parent,\nFee of *{request.amount}* is due for *{student['name']}*.\n"
@@ -314,18 +317,73 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
             f"Please pay at the school counter.\nThank you!"
         )
 
+        # Try to find the invoice and generate a PDF
+        pdf_sent = False
         try:
-            from tasks import send_whatsapp_message
-            send_whatsapp_message.delay(phone, message, session_name=current_user.get("school_id", "default"))
-        except Exception:
-            pass
+            now = datetime.now()
+            conn = database.create_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # Find the most recent unpaid invoice for this student
+            cursor.execute("""
+                SELECT * FROM fee_invoices
+                WHERE student_id = %s AND status != 'PAID'
+                ORDER BY year DESC, month DESC LIMIT 1
+            """, (request.student_id,))
+            invoice = cursor.fetchone()
+
+            if invoice:
+                # Fetch payment history
+                cursor.execute("""
+                    SELECT * FROM fee_payments
+                    WHERE invoice_id = %s ORDER BY payment_date DESC
+                """, (invoice["id"],))
+                payments = cursor.fetchall()
+
+                cursor.close()
+                conn.close()
+
+                # Enrich invoice with student info
+                invoice["student_name"] = student.get("name", "N/A")
+                invoice["class_name"] = student.get("class_name", "")
+                invoice["section"] = student.get("section", "")
+                invoice["parent_phone"] = phone
+
+                # Generate PDF
+                from invoice_pdf import generate_invoice_pdf
+                pdf_bytes = generate_invoice_pdf(invoice, payments)
+                filename = f"Invoice_{invoice.get('invoice_number', 'FEE')}.pdf"
+
+                # Send PDF with caption
+                success, err_msg = whatsapp.send_whatsapp_document(
+                    phone, pdf_bytes, filename, caption=message, school_id=school_id
+                )
+                if success:
+                    pdf_sent = True
+                else:
+                    print(f"[Fees] PDF send failed ({err_msg}), falling back to text message")
+            else:
+                cursor.close()
+                conn.close()
+        except Exception as pdf_err:
+            print(f"[Fees] PDF generation/send error: {pdf_err}, falling back to text message")
+
+        # Fallback: send text-only message if PDF wasn't sent
+        if not pdf_sent:
+            success, err_msg = whatsapp.send_whatsapp_notification(phone, message, school_id=school_id)
+            if not success:
+                raise HTTPException(status_code=502, detail=err_msg)
 
         database.update_last_reminder_sent(request.student_id)
-        return {"status": "success", "message": f"Reminder sent to {student['name']}'s parent."}
+        return {
+            "status": "success",
+            "message": f"Reminder {'with invoice PDF ' if pdf_sent else ''}sent to {student['name']}'s parent."
+        }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ── 7. Overdue stats for dashboard ────────────────────────────────────────────
@@ -399,11 +457,35 @@ async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
                 f"⚠️ Late Fine: ₹{float(t['late_fine']):,.0f}\n\n"
                 f"Please pay at the school counter. Thank you!"
             )
+
+            # Try sending with invoice PDF
+            sent = False
             try:
-                from tasks import send_whatsapp_message
-                send_whatsapp_message.delay(phone, msg, session_name=school_id)
-            except Exception:
-                pass
+                from invoice_pdf import generate_invoice_pdf
+                # Build invoice dict for PDF
+                inv_data = dict(t)
+                inv_data["student_name"] = t.get("name", "N/A")
+                inv_data["parent_phone"] = phone
+                inv_data["invoice_number"] = f"INV-{t['student_id']}-{t['year']}{t['month']:02d}"
+
+                pdf_bytes = generate_invoice_pdf(inv_data)
+                filename = f"Invoice_{inv_data['invoice_number']}.pdf"
+
+                success, err_msg = whatsapp.send_whatsapp_document(
+                    phone, pdf_bytes, filename, caption=msg, school_id=school_id
+                )
+                if success:
+                    sent = True
+            except Exception as pdf_err:
+                print(f"[Broadcast] PDF error for {t['name']}: {pdf_err}")
+
+            # Fallback to text-only
+            if not sent:
+                success, err_msg = whatsapp.send_whatsapp_notification(phone, msg, school_id=school_id)
+                if not success:
+                    print(f"⚠️ Failed to send WhatsApp reminder to {phone} for {t['name']}: {err_msg}")
+                    continue
+
 
             # Log reminder
             cursor.execute("""
