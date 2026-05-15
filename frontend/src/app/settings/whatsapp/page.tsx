@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { RiWhatsappLine, RiRefreshLine, RiCheckLine, RiErrorWarningLine, RiLogoutBoxRLine } from 'react-icons/ri';
 import toast from 'react-hot-toast';
 import styled from 'styled-components';
+import { api } from '@/services/api';
 
 const PageWrapper = styled.div`
   padding: 40px;
@@ -120,12 +121,7 @@ export default function WhatsAppSettings() {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/whatsapp/status`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+      const data = await api.get<any>('/whatsapp/status');
       setStatus(data);
       if (data.connected) {
         setQrCode(null);
@@ -140,19 +136,14 @@ export default function WhatsAppSettings() {
   const fetchQR = async () => {
     setRefreshing(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/whatsapp/qr`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
+      const data = await api.get<any>('/whatsapp/qr');
       if (data.base64) {
         setQrCode(data.base64);
       } else {
         toast.error("QR code not ready yet. Please wait...");
       }
-    } catch (err) {
-      toast.error("Failed to fetch QR code. Is Docker running?");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fetch QR code. Is Docker running?");
     } finally {
       setRefreshing(false);
     }
@@ -161,12 +152,7 @@ export default function WhatsAppSettings() {
   const handleLogout = async () => {
     if (!confirm("Are you sure you want to disconnect WhatsApp?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/whatsapp/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      await api.post('/whatsapp/logout');
       toast.success("Disconnected successfully");
       fetchStatus();
     } catch (err) {
@@ -199,12 +185,12 @@ export default function WhatsAppSettings() {
                 <img src={qrCode} alt="WhatsApp QR Code" />
               ) : (
                 <div style={{ color: '#94A3B8', fontSize: '0.875rem', padding: '20px' }}>
-                  {status?.state === 'offline' ? 'API is Offline. Please ensure Docker is running.' : 'Click "Generate QR" to start setup.'}
+                  {status?.state === 'offline' ? 'API is Offline. Please ensure Docker is running.' : 'Click "Generate QR Code" to start setup.'}
                 </div>
               )}
             </QRContainer>
             <ActionGroup>
-              <Button onClick={fetchQR} disabled={refreshing || status?.state === 'offline'}>
+              <Button onClick={fetchQR} disabled={refreshing}>
                 <RiRefreshLine className={refreshing ? 'spin' : ''} />
                 {qrCode ? 'Refresh QR' : 'Generate QR Code'}
               </Button>
