@@ -282,7 +282,12 @@ export default function FeesPage() {
     } catch { setHistPayments([]); }
   };
 
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+
   const sendReminder = async (inv: any) => {
+    // Prevent duplicate sends
+    if (sendingReminderId) return;
+    setSendingReminderId(inv.student_id);
     try {
       await api.post('/fees/send-reminder', {
         student_id: inv.student_id,
@@ -292,6 +297,8 @@ export default function FeesPage() {
       toast.success(`Reminder sent to ${inv.student_name}'s parent`, { icon: '📲' });
     } catch (e: any) {
       toast.error(e.message || 'Failed to send reminder');
+    } finally {
+      setSendingReminderId(null);
     }
   };
 

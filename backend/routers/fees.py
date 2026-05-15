@@ -287,11 +287,19 @@ def record_payment(req: RecordPaymentRequest, current_user: dict = Depends(auth.
 
 @router.post("/send-reminder")
 async def send_reminder(request: ReminderRequest, current_user: dict = Depends(auth.get_current_user)):
+    """
+    Send a fee reminder to a student's parent via WhatsApp.
+    
+    SAFETY: The parent phone number is ALWAYS fetched fresh from the database.
+    We never rely on cached, client-supplied, or session-based phone numbers.
+    """
     try:
+        # 1. Fresh DB lookup for the student — single source of truth
         student = database.get_student_by_id(request.student_id)
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
+        # 2. Debounce: prevent spamming the same parent
         from datetime import timedelta
         last_sent = student.get("last_reminder_sent")
         if last_sent:
@@ -304,23 +312,28 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
                 mins = int(diff.total_seconds() // 60)
                 raise HTTPException(status_code=429, detail=f"Please wait {mins} min before resending.")
 
+        # 3. Extract parent phone — MUST come from database, not from client
         phone = student.get("parent_phone") or student.get("phone")
-        if not phone:
-            raise HTTPException(status_code=400, detail="Parent phone not found")
+        if not phone or not phone.strip():
+            raise HTTPException(
+                status_code=400,
+                detail=f"No parent phone number found for student '{student.get('name', request.student_id)}'. "
+                       f"Please update the student's profile with a valid parent WhatsApp number."
+            )
 
+        student_name = student.get("name", "Unknown")
         school_id = current_user.get("school_id", "default")
 
         message = (
             f"📚 *Visio School: Fee Reminder*\n\n"
-            f"Dear Parent,\nFee of *{request.amount}* is due for *{student['name']}*.\n"
+            f"Dear Parent,\nFee of *{request.amount}* is due for *{student_name}*.\n"
             f"Fee type: {request.fee_type}\n\n"
             f"Please pay at the school counter.\nThank you!"
         )
 
-        # Try to find the invoice and generate a PDF
+        # 4. Try to find the invoice and generate a PDF
         pdf_sent = False
         try:
-            now = datetime.now()
             conn = database.create_connection()
             cursor = conn.cursor(dictionary=True)
 
@@ -344,7 +357,7 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
                 conn.close()
 
                 # Enrich invoice with student info
-                invoice["student_name"] = student.get("name", "N/A")
+                invoice["student_name"] = student_name
                 invoice["class_name"] = student.get("class_name", "")
                 invoice["section"] = student.get("section", "")
                 invoice["parent_phone"] = phone
@@ -354,9 +367,12 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
                 pdf_bytes = generate_invoice_pdf(invoice, payments)
                 filename = f"Invoice_{invoice.get('invoice_number', 'FEE')}.pdf"
 
-                # Send PDF with caption
+                # Send PDF with caption — passing student context for audit
                 success, err_msg = whatsapp.send_whatsapp_document(
-                    phone, pdf_bytes, filename, caption=message, school_id=school_id
+                    phone, pdf_bytes, filename, caption=message,
+                    school_id=school_id,
+                    student_id=request.student_id,
+                    student_name=student_name,
                 )
                 if success:
                     pdf_sent = True
@@ -368,16 +384,22 @@ async def send_reminder(request: ReminderRequest, current_user: dict = Depends(a
         except Exception as pdf_err:
             print(f"[Fees] PDF generation/send error: {pdf_err}, falling back to text message")
 
-        # Fallback: send text-only message if PDF wasn't sent
+        # 5. Fallback: send text-only message if PDF wasn't sent
         if not pdf_sent:
-            success, err_msg = whatsapp.send_whatsapp_notification(phone, message, school_id=school_id)
+            success, err_msg = whatsapp.send_whatsapp_notification(
+                phone, message,
+                school_id=school_id,
+                student_id=request.student_id,
+                student_name=student_name,
+            )
             if not success:
                 raise HTTPException(status_code=502, detail=err_msg)
 
+        # 6. Update last reminder timestamp
         database.update_last_reminder_sent(request.student_id)
         return {
             "status": "success",
-            "message": f"Reminder {'with invoice PDF ' if pdf_sent else ''}sent to {student['name']}'s parent."
+            "message": f"Reminder {'with invoice PDF ' if pdf_sent else ''}sent to {student_name}'s parent ({phone})."
         }
     except HTTPException:
         raise
@@ -425,11 +447,16 @@ async def mark_payment_done(request: dict, current_user: dict = Depends(auth.get
 
 @router.post("/broadcast-reminders")
 async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
+    """
+    Broadcast fee reminders to all parents with unpaid invoices.
+    
+    SAFETY: Each message targets a specific parent_phone from the database.
+    The whatsapp module enforces JID validation and deduplication per-recipient.
+    """
     school_id = current_user.get("school_id", "")
     conn = database.create_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        now = datetime.now()
         # Get unpaid/overdue invoices where last reminder > 7 days or never sent
         cursor.execute("""
             SELECT fi.id, fi.student_id, fi.balance_due, fi.total_payable,
@@ -444,14 +471,20 @@ async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
         targets = cursor.fetchall()
 
         queued = 0
+        skipped = 0
         for t in targets:
             phone = t.get("parent_phone") or t.get("phone")
-            if not phone:
+            if not phone or not phone.strip():
+                skipped += 1
+                print(f"[Broadcast] ⏭️ Skipping {t.get('name', 'Unknown')} — no parent phone")
                 continue
+
+            student_id = t["student_id"]
+            student_name = t.get("name", "Unknown")
             month_name = datetime(t["year"], t["month"], 1).strftime("%B %Y")
             msg = (
                 f"📚 *Visio School: Fee Due Reminder*\n\n"
-                f"Dear Parent,\nThis is a reminder for *{t['name']}*.\n\n"
+                f"Dear Parent,\nThis is a reminder for *{student_name}*.\n\n"
                 f"📅 Month: {month_name}\n"
                 f"💰 Total Due: ₹{float(t['balance_due']):,.0f}\n"
                 f"⚠️ Late Fine: ₹{float(t['late_fine']):,.0f}\n\n"
@@ -464,26 +497,34 @@ async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
                 from invoice_pdf import generate_invoice_pdf
                 # Build invoice dict for PDF
                 inv_data = dict(t)
-                inv_data["student_name"] = t.get("name", "N/A")
+                inv_data["student_name"] = student_name
                 inv_data["parent_phone"] = phone
-                inv_data["invoice_number"] = f"INV-{t['student_id']}-{t['year']}{t['month']:02d}"
+                inv_data["invoice_number"] = f"INV-{student_id}-{t['year']}{t['month']:02d}"
 
                 pdf_bytes = generate_invoice_pdf(inv_data)
                 filename = f"Invoice_{inv_data['invoice_number']}.pdf"
 
                 success, err_msg = whatsapp.send_whatsapp_document(
-                    phone, pdf_bytes, filename, caption=msg, school_id=school_id
+                    phone, pdf_bytes, filename, caption=msg,
+                    school_id=school_id,
+                    student_id=student_id,
+                    student_name=student_name,
                 )
                 if success:
                     sent = True
             except Exception as pdf_err:
-                print(f"[Broadcast] PDF error for {t['name']}: {pdf_err}")
+                print(f"[Broadcast] PDF error for {student_name}: {pdf_err}")
 
             # Fallback to text-only
             if not sent:
-                success, err_msg = whatsapp.send_whatsapp_notification(phone, msg, school_id=school_id)
+                success, err_msg = whatsapp.send_whatsapp_notification(
+                    phone, msg,
+                    school_id=school_id,
+                    student_id=student_id,
+                    student_name=student_name,
+                )
                 if not success:
-                    print(f"⚠️ Failed to send WhatsApp reminder to {phone} for {t['name']}: {err_msg}")
+                    print(f"⚠️ Failed to send WhatsApp reminder to {phone} for {student_name}: {err_msg}")
                     continue
 
 
@@ -491,14 +532,14 @@ async def broadcast_reminders(current_user: dict = Depends(auth.require_admin)):
             cursor.execute("""
                 INSERT INTO reminder_logs (student_id, school_id, invoice_id, phone, message)
                 VALUES (%s,%s,%s,%s,%s)
-            """, (t["student_id"], school_id, t["id"], phone, msg))
+            """, (student_id, school_id, t["id"], phone, msg))
             cursor.execute(
-                "UPDATE students SET last_reminder_sent=NOW() WHERE id=%s", (t["student_id"],)
+                "UPDATE students SET last_reminder_sent=NOW() WHERE id=%s", (student_id,)
             )
             queued += 1
 
         conn.commit()
-        return {"status": "success", "queued": queued}
+        return {"status": "success", "queued": queued, "skipped_no_phone": skipped}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
