@@ -172,6 +172,89 @@ def get_student(student_id: str, current_user: dict = Depends(auth.get_current_u
     history = database.get_attendance_history(student_id, school_id=current_user.get('school_id', ''))
     return {"student": student, "history": history}
 
+@router.put("/{student_id}")
+async def update_student_record(
+    student_id: str,
+    name: str = Form(None),
+    class_name: str = Form(None),
+    section: str = Form(None),
+    email: str = Form(None),
+    phone: str = Form(None),
+    parent_phone: str = Form(None),
+    dob: str = Form(None),
+    admission_date: str = Form(None),
+    student_type: str = Form(None),
+    transport_type: str = Form(None),
+    tuition_fee: float = Form(None),
+    transport_fee: float = Form(None),
+    hostel_fee: float = Form(None),
+    total_monthly_fee: float = Form(None),
+    last_payment_date: str = Form(None),
+    opening_balance: float = Form(None),
+    is_on_hold: bool = Form(None),
+    photo: UploadFile = File(None),
+    current_user: dict = Depends(auth.require_admin)
+):
+    school_id = current_user.get('school_id', '')
+    try:
+        # Check if student exists
+        existing = database.get_student_by_id(student_id, school_id=school_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        # Prepare update data
+        update_data = {}
+        if name is not None: update_data['name'] = name
+        if class_name is not None: update_data['class_name'] = class_name
+        if section is not None: update_data['section'] = section
+        if email is not None: update_data['email'] = email
+        if phone is not None: update_data['phone'] = phone
+        if parent_phone is not None: update_data['parent_phone'] = parent_phone
+        if dob is not None: update_data['dob'] = dob
+        if is_on_hold is not None: update_data['is_on_hold'] = is_on_hold
+        # Additional fields
+        if student_type is not None: update_data['student_type'] = student_type
+        if transport_type is not None: update_data['transport_type'] = transport_type
+        if tuition_fee is not None: update_data['tuition_fee'] = tuition_fee
+        if transport_fee is not None: update_data['transport_fee'] = transport_fee
+        if hostel_fee is not None: update_data['hostel_fee'] = hostel_fee
+        if total_monthly_fee is not None: update_data['total_monthly_fee'] = total_monthly_fee
+        if last_payment_date is not None: update_data['last_payment_date'] = last_payment_date
+        if opening_balance is not None: update_data['opening_balance'] = opening_balance
+
+        photo_url = existing.get('photo_url')
+        img_buffer = None
+
+        if photo:
+            img = Image.open(photo.file)
+            if img.mode in ("RGBA", "P"): img = img.convert("RGB")
+            img_buffer = BytesIO()
+            img.save(img_buffer, format='JPEG', quality=85)
+            img_buffer.seek(0)
+            photo_url = f"/static/students/{student_id}.jpg"
+            update_data['photo_url'] = photo_url
+
+        # We need a more flexible update_student in database.py or handle it here
+        # For now, let's use the one in database.py and expand it if needed
+        # Actually, let's update database.py to handle more fields first.
+        
+        success = database.update_student(student_id, update_data)
+        
+        if success and img_buffer:
+            os.makedirs("static/students", exist_ok=True)
+            with open(f"static/students/{student_id}.jpg", "wb") as f: f.write(img_buffer.getbuffer())
+            os.makedirs("faces", exist_ok=True)
+            face_path = os.path.join("faces", f"{student_id}.jpg")
+            with open(face_path, "wb") as f: f.write(img_buffer.getbuffer())
+            
+            image_np = face_recognition.load_image_file(face_path)
+            encodings = face_recognition.face_encodings(image_np)
+            if encodings: face_state.add_face(encodings[0], student_id)
+
+        return {"message": "Student updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{student_id}")
 def delete_student(student_id: str, current_user: dict = Depends(auth.require_admin)):
     success = database.delete_student(student_id, school_id=current_user.get('school_id', ''))

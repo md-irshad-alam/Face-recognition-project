@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   RiMoneyDollarCircleLine, RiCheckboxCircleLine, RiErrorWarningLine,
   RiTimeLine, RiSendPlaneFill, RiAddLine, RiRefreshLine,
-  RiFileTextLine, RiHistoryLine, RiMore2Fill
+  RiFileTextLine, RiHistoryLine, RiMore2Fill, RiArrowLeftLine, RiArrowRightLine
 } from 'react-icons/ri';
 import { toast } from 'react-hot-toast';
 import { api } from '@/services/api';
@@ -132,7 +132,6 @@ const downloadPDF = async (inv: any) => {
   doc.save(`Invoice_${inv.invoice_number}.pdf`);
 };
 
-// ── Inline popup action menu ───────────────────────────────────────────────────
 function ActionMenu({ inv, onPay, onHistory, onRemind }: {
   inv: any;
   onPay: (inv: any) => void;
@@ -140,6 +139,7 @@ function ActionMenu({ inv, onPay, onHistory, onRemind }: {
   onRemind: (inv: any) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<'top' | 'bottom'>('bottom');
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,6 +147,19 @@ function ActionMenu({ inv, onPay, onHistory, onRemind }: {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+
+    // Calculate position
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuHeight = 180; // Estimated height of menu
+      if (spaceBelow < menuHeight && rect.top > menuHeight) {
+        setPosition('top');
+      } else {
+        setPosition('bottom');
+      }
+    }
+
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
@@ -157,8 +170,24 @@ function ActionMenu({ inv, onPay, onHistory, onRemind }: {
         <RiMore2Fill size={20} />
       </SC.MenuButton>
       {open && (
-        <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'white', border: '1px solid #E2E8F0', borderRadius: 14, boxShadow: '0 12px 32px rgba(0,0,0,0.12)', zIndex: 200, minWidth: 190, overflow: 'hidden', animation: 'slideDown 0.2s ease-out' }}>
-          <style>{`@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+        <div style={{ 
+          position: 'absolute', 
+          right: 0, 
+          bottom: position === 'top' ? 'calc(100% + 8px)' : 'auto',
+          top: position === 'bottom' ? 'calc(100% + 8px)' : 'auto',
+          background: 'white', 
+          border: '1px solid #E2E8F0', 
+          borderRadius: 14, 
+          boxShadow: '0 12px 32px rgba(0,0,0,0.12)', 
+          zIndex: 9999, 
+          minWidth: 190, 
+          overflow: 'hidden', 
+          animation: position === 'top' ? 'slideUp 0.2s ease-out' : 'slideDown 0.2s ease-out' 
+        }}>
+          <style>{`
+            @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          `}</style>
           {inv.status !== 'PAID' && (
             <button onClick={() => { setOpen(false); onPay(inv); }}
               style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', textAlign: 'left', fontSize: '0.8125rem', fontWeight: 600, color: '#10B981', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.2s' }}>
@@ -187,12 +216,14 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function FeesPage() {
-  const [activeTab, setActiveTab] = useState<'invoices'|'history'|'legacy'>('invoices');
+  const [activeTab, setActiveTab] = useState<'invoices'|'history'>('invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterStatus, setFilterStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Payment modal
   const [payModal, setPayModal] = useState(false);
@@ -208,9 +239,6 @@ export default function FeesPage() {
   const [histModal, setHistModal] = useState(false);
   const [histPayments, setHistPayments] = useState<any[]>([]);
 
-  // Legacy fee data
-  const [legacyData, setLegacyData] = useState<any[]>([]);
-
   const fetchInvoices = async () => {
     setLoading(true);
     try {
@@ -219,29 +247,25 @@ export default function FeesPage() {
       const qs = new URLSearchParams(Object.entries(params).map(([k,v]) => [k, String(v)]));
       const data = await api.get<any[]>(`/fees/invoices?${qs}`);
       setInvoices(Array.isArray(data) ? data : []);
+      setPage(1);
     } catch {
       toast.error('Failed to load invoices');
     } finally { setLoading(false); }
   };
 
-  const fetchLegacy = async () => {
-    try {
-      const data = await api.get<any[]>('/fees/students');
-      setLegacyData(Array.isArray(data) ? data : []);
-    } catch {}
-  };
-
   useEffect(() => { fetchInvoices(); }, [filterMonth, filterYear, filterStatus]);
-  useEffect(() => { if (activeTab === 'legacy') fetchLegacy(); }, [activeTab]);
 
   const stats = useMemo(() => {
-    const paid = invoices.filter(i => i.status === 'PAID').length;
     const overdue = invoices.filter(i => i.status === 'OVERDUE').length;
-    const partial = invoices.filter(i => i.status === 'PARTIALLY_PAID').length;
     const totalDue = invoices.reduce((s, i) => s + parseFloat(i.balance_due || 0), 0);
-    const totalCollected = invoices.reduce((s, i) => s + parseFloat(i.amount_paid || 0), 0);
-    return { paid, overdue, partial, totalDue, totalCollected, total: invoices.length };
+    return { overdue, totalDue, total: invoices.length };
   }, [invoices]);
+
+  const pagedInvoices = useMemo(() => {
+    return invoices.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [invoices, page]);
+
+  const totalPages = Math.ceil(invoices.length / PAGE_SIZE);
 
   const openPayModal = (inv: any) => {
     setSelectedInvoice(inv);
@@ -285,7 +309,6 @@ export default function FeesPage() {
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
 
   const sendReminder = async (inv: any) => {
-    // Prevent duplicate sends
     if (sendingReminderId) return;
     setSendingReminderId(inv.student_id);
     try {
@@ -338,26 +361,25 @@ export default function FeesPage() {
         </div>
       </SC.Header>
 
-      {/* Stats Strip */}
+      {/* Condense Stats Grid */}
       <div style={{ 
         display:'grid', 
-        gridTemplateColumns:'repeat(auto-fit, minmax(calc(50% - 8px), 1fr))', 
+        gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', 
         gap:16 
       }}>
         {[
-          { label:'Total Invoices', val: stats.total, icon:<RiFileTextLine size={20}/>, color:'#4F46E5', bg:'#EEF2FF' },
-          { label:'Paid', val: stats.paid, icon:<RiCheckboxCircleLine size={20}/>, color:'#10B981', bg:'#F0FDF4' },
-          { label:'Partial', val: stats.partial, icon:<RiTimeLine size={20}/>, color:'#F59E0B', bg:'#FFFBEB' },
-          { label:'Overdue', val: stats.overdue, icon:<RiErrorWarningLine size={20}/>, color:'#EF4444', bg:'#FEF2F2' },
-          { label:'Collected', val:`₹${stats.totalCollected.toLocaleString('en-IN',{maximumFractionDigits:0})}`, icon:<RiMoneyDollarCircleLine size={20}/>, color:'#10B981', bg:'#F0FDF4' },
-          { label:'Outstanding', val:`₹${stats.totalDue.toLocaleString('en-IN',{maximumFractionDigits:0})}`, icon:<RiErrorWarningLine size={20}/>, color:'#EF4444', bg:'#FEF2F2' },
+          { label:'Total Invoices', val: stats.total, icon:<RiFileTextLine size={18}/>, color:'#4F46E5', bg:'#EEF2FF' },
+          { label:'Overdue', val: stats.overdue, icon:<RiErrorWarningLine size={18}/>, color:'#EF4444', bg:'#FEF2F2' },
+          { label:'Outstanding', val:`₹${stats.totalDue.toLocaleString('en-IN',{maximumFractionDigits:0})}`, icon:<RiMoneyDollarCircleLine size={18}/>, color:'#EF4444', bg:'#FEF2F2' },
         ].map(c => (
-          <div key={c.label} style={{ background:'white', borderRadius:20, padding:'20px 24px', border:'1px solid #F1F5F9', minWidth: 0 }}>
-            <div style={{ width:40,height:40,borderRadius:12,background:c.bg,color:c.color,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12 }}>
+          <div key={c.label} style={{ background:'white', borderRadius:16, padding:'14px 20px', border:'1px solid #F1F5F9', display:'flex', alignItems:'center', gap:16 }}>
+            <div style={{ width:36,height:36,borderRadius:10,background:c.bg,color:c.color,display:'flex',alignItems:'center',justifyContent:'center', flexShrink:0 }}>
               {c.icon}
             </div>
-            <p style={{ margin:0, fontSize:'0.75rem', fontWeight:700, color:'#94A3B8', textTransform:'uppercase' }}>{c.label}</p>
-            <p style={{ margin:'4px 0 0', fontSize:'clamp(1rem, 5vw, 1.5rem)', fontWeight:900, color:'#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.val}</p>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin:0, fontSize:'0.625rem', fontWeight:800, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.025em' }}>{c.label}</p>
+              <p style={{ margin:'2px 0 0', fontSize:'1.125rem', fontWeight:900, color:'#0F172A', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.val}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -368,7 +390,6 @@ export default function FeesPage() {
 
       {activeTab === 'invoices' && (
         <>
-          {/* Filters */}
           <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
             <SC.Select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)} style={{ flex: '1 1 100px' }}>
               {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
@@ -383,89 +404,91 @@ export default function FeesPage() {
               <option value='UNPAID'>Unpaid</option>
               <option value='OVERDUE'>Overdue</option>
             </SC.Select>
-            <button onClick={fetchInvoices} style={{ flex: '1 1 auto', background:'#F1F5F9', border:'none', borderRadius:10, padding:'9px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent: 'center', gap:6, fontWeight:700, color:'#64748B' }}>
+            <button onClick={fetchInvoices} style={{ flex: '1 1 auto', background:'#F1F5F9', border:'none', borderRadius:10, padding:'9px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontWeight:700, color:'#64748B' }}>
               <RiRefreshLine /> Refresh
             </button>
           </div>
 
           <SC.TableContainer>
             {loading ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>Loading invoices…</div>
+              <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'#94A3B8', height:300 }}>Loading invoices…</div>
             ) : invoices.length === 0 ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', padding: 40 }}>
+              <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#94A3B8', padding:40, height:300 }}>
                 <RiFileTextLine size={40} style={{ opacity:0.3, marginBottom:12 }} /><br/>
-                No invoices for this period. Click "Generate Invoices" to create them.
+                No invoices found.
               </div>
             ) : (
-              <div style={{ overflowX:'auto', flex: 1 }}>
-                <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                  <thead>
-                    <tr style={{ background:'#F8FAFC' }}>
-                      {['Invoice #','Student','Class','Monthly Fee','Prev Due','Late Fine','Total','Paid','Balance','Months Pending','Status','Actions'].map(h=>(
-                        <th key={h} style={{ padding:'14px 16px', fontSize:'0.6875rem', fontWeight:800, color:'#94A3B8', textTransform:'uppercase', textAlign:'left', borderBottom:'1px solid #F1F5F9', whiteSpace:'nowrap' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.map(inv => (
-                      <tr key={inv.id} style={{ borderBottom:'1px solid #F8FAFC' }}>
-                        <td style={{ padding:'14px 16px', fontSize:'0.8125rem', fontWeight:400, color:'#4F46E5', cursor:'pointer', textDecoration:'underline' }} onClick={() => downloadPDF(inv)}>
-                          {inv.invoice_number}
-                        </td>
-                        <td style={{ padding:'14px 16px', fontWeight:400, color:'#1E293B' }}>{inv.student_name}</td>
-                        <td style={{ padding:'14px 16px', fontSize:'0.8125rem', color:'#64748B', fontWeight:400 }}>{inv.class_name} {inv.section}</td>
-                        <td style={{ padding:'14px 16px', fontWeight:400 }}>₹{parseFloat(inv.monthly_fee||0).toLocaleString('en-IN')}</td>
-                        <td style={{ padding:'14px 16px', color: '#64748B', fontWeight:400 }}>
-                          ₹{parseFloat(inv.previous_due||0).toLocaleString('en-IN')}
-                        </td>
-                        <td style={{ padding:'14px 16px', color: '#64748B', fontWeight:400 }}>
-                          ₹{parseFloat(inv.late_fine||0).toLocaleString('en-IN')}
-                        </td>
-                        <td style={{ padding:'14px 16px', fontWeight:400 }}>₹{parseFloat(inv.total_payable||0).toLocaleString('en-IN')}</td>
-                        <td style={{ padding:'14px 16px', color:'#10B981', fontWeight:400 }}>₹{parseFloat(inv.amount_paid||0).toLocaleString('en-IN')}</td>
-                        <td style={{ padding:'14px 16px', color: '#1E293B', fontWeight:400 }}>
-                          ₹{parseFloat(inv.balance_due||0).toLocaleString('en-IN')}
-                        </td>
-                        <td style={{ padding:'14px 16px' }}>
-                          <span style={{ padding:'4px 10px', borderRadius:20, fontSize:'0.75rem', fontWeight:400, background: (inv.status === 'PAID' ? '#F0FDF4' : '#FEF2F2'), color: (inv.status === 'PAID' ? '#10B981' : '#EF4444') }}>
-                            {inv.status === 'PAID' ? '0 Months' : `${inv.months_pending} Months`}
-                          </span>
-                        </td>
-                        <td style={{ padding:'14px 16px' }}>
-                          <span style={{ padding:'4px 10px', borderRadius:20, fontSize:'0.6875rem', fontWeight:400, background:STATUS_COLOR[inv.status]+'20', color:STATUS_COLOR[inv.status] }}>
-                            {inv.status.replace('_',' ')}
-                          </span>
-                        </td>
-                        <td style={{ padding:'14px 16px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            {inv.status === 'PAID' ? (
-                              <button onClick={() => openHistory(inv)} title="Payment History"
-                                style={{ background:'none', border:'none', color:'#64748B', cursor:'pointer', padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                <RiHistoryLine size={20} />
-                              </button>
-                            ) : (
+              <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+                <div style={{ overflowX:'auto', flex:1 }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead>
+                      <tr style={{ background:'#F8FAFC' }}>
+                        {['Invoice #','Student','Class','Monthly Fee','Prev Due','Late Fine','Total','Paid','Balance','Months Pending','Status','Actions'].map(h=>(
+                          <th key={h} style={{ padding:'14px 16px', fontSize:'0.6875rem', fontWeight:800, color:'#94A3B8', textTransform:'uppercase', textAlign:'left', borderBottom:'1px solid #F1F5F9', whiteSpace:'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedInvoices.map(inv => (
+                        <tr key={inv.id} style={{ borderBottom:'1px solid #F8FAFC' }}>
+                          <td style={{ padding:'14px 16px', fontSize:'0.8125rem', fontWeight:400, color:'#4F46E5', cursor:'pointer', textDecoration:'underline' }} onClick={() => downloadPDF(inv)}>
+                            {inv.invoice_number}
+                          </td>
+                          <td style={{ padding:'14px 16px', fontWeight:400, color:'#1E293B' }}>{inv.student_name}</td>
+                          <td style={{ padding:'14px 16px', fontSize:'0.8125rem', color:'#64748B', fontWeight:400 }}>{inv.class_name} {inv.section}</td>
+                          <td style={{ padding:'14px 16px', fontWeight:400 }}>₹{parseFloat(inv.monthly_fee||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px', color:'#64748B', fontWeight:400 }}>₹{parseFloat(inv.previous_due||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px', color:'#64748B', fontWeight:400 }}>₹{parseFloat(inv.late_fine||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px', fontWeight:400 }}>₹{parseFloat(inv.total_payable||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px', color:'#10B981', fontWeight:400 }}>₹{parseFloat(inv.amount_paid||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px', color:'#1E293B', fontWeight:400 }}>₹{parseFloat(inv.balance_due||0).toLocaleString('en-IN')}</td>
+                          <td style={{ padding:'14px 16px' }}>
+                            <span style={{ padding:'4px 10px', borderRadius:20, fontSize:'0.75rem', fontWeight:400, background: (inv.status === 'PAID' ? '#F0FDF4' : '#FEF2F2'), color: (inv.status === 'PAID' ? '#10B981' : '#EF4444') }}>
+                              {inv.status === 'PAID' ? '0 Months' : `${inv.months_pending} Months`}
+                            </span>
+                          </td>
+                          <td style={{ padding:'14px 16px' }}>
+                            <span style={{ padding:'4px 10px', borderRadius:20, fontSize:'0.6875rem', fontWeight:400, background:STATUS_COLOR[inv.status]+'20', color:STATUS_COLOR[inv.status] }}>
+                              {inv.status.replace('_',' ')}
+                            </span>
+                          </td>
+                          <td style={{ padding:'14px 16px' }}>
+                            <div style={{ display:'flex', justifyContent:'flex-end' }}>
                               <ActionMenu 
                                 inv={inv} 
                                 onPay={openPayModal} 
                                 onHistory={openHistory} 
                                 onRemind={sendReminder} 
                               />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <SC.Pagination>
+                    <div className="info">
+                      Showing {(page-1)*PAGE_SIZE+1}–{Math.min(page*PAGE_SIZE, invoices.length)} of {invoices.length}
+                    </div>
+                    <div className="controls">
+                      <SC.PageBtn disabled={page===1} onClick={()=>setPage(p=>p-1)}><RiArrowLeftLine/></SC.PageBtn>
+                      {Array.from({length:totalPages}).map((_,i)=>(
+                        <SC.PageBtn key={i} $active={page===i+1} onClick={()=>setPage(i+1)}>{i+1}</SC.PageBtn>
+                      ))}
+                      <SC.PageBtn disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}><RiArrowRightLine/></SC.PageBtn>
+                    </div>
+                  </SC.Pagination>
+                )}
               </div>
             )}
           </SC.TableContainer>
         </>
       )}
 
-      {/* REMOVED activeTab === 'legacy' section */}
-
-      {/* ── Record Payment Modal ── */}
+      {/* Record Payment Modal */}
       <Modal isOpen={payModal} onClose={()=>setPayModal(false)} title="Record Counter Payment" width="520px">
         {selectedInvoice && (
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
@@ -473,85 +496,43 @@ export default function FeesPage() {
               <p style={{ margin:0, fontWeight:800, color:'#1E293B' }}>{selectedInvoice.student_name}</p>
               <p style={{ margin:'4px 0 0', fontSize:'0.8125rem', color:'#64748B' }}>{selectedInvoice.invoice_number} • Due: ₹{parseFloat(selectedInvoice.balance_due).toLocaleString('en-IN')}</p>
             </div>
-
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
               <div>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6, textTransform:'uppercase' }}>Amount (₹)*</label>
-                <input type="number" value={payAmount} onChange={e=>setPayAmount(e.target.value)}
-                  style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'1rem', fontWeight:700, background:'#F8FAFC', outline:'none' }} />
+                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6 }}>AMOUNT (₹)*</label>
+                <input type="number" value={payAmount} onChange={e=>setPayAmount(e.target.value)} style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'1rem', fontWeight:700, background:'#F8FAFC' }} />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6, textTransform:'uppercase' }}>Payment Date*</label>
-                <input type="date" value={payDate} onChange={e=>setPayDate(e.target.value)}
-                  style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'0.875rem', background:'#F8FAFC', outline:'none' }} />
+                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6 }}>DATE*</label>
+                <input type="date" value={payDate} onChange={e=>setPayDate(e.target.value)} style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'0.875rem', background:'#F8FAFC' }} />
               </div>
             </div>
-
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6, textTransform:'uppercase' }}>Payment Method*</label>
-              <select value={payMethod} onChange={e=>setPayMethod(e.target.value)}
-                style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'0.875rem', fontWeight:600, background:'#F8FAFC', outline:'none', appearance:'none' }}>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6 }}>METHOD*</label>
+              <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', background:'#F8FAFC' }}>
                 <option value="CASH">Cash</option>
                 <option value="UPI">UPI</option>
                 <option value="BANK_TRANSFER">Bank Transfer</option>
-                <option value="CHEQUE">Cheque</option>
-                <option value="DD">Demand Draft</option>
-                <option value="OTHER">Other</option>
               </select>
             </div>
-
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6, textTransform:'uppercase' }}>Reference / Receipt No.</label>
-              <input value={payRef} onChange={e=>setPayRef(e.target.value)} placeholder="UPI ref, cheque no, etc."
-                style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', fontSize:'0.875rem', background:'#F8FAFC', outline:'none' }} />
-            </div>
-
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6, textTransform:'uppercase' }}>Notes</label>
-              <textarea value={payNotes} onChange={e=>setPayNotes(e.target.value)} rows={2} placeholder="Optional notes…"
-                style={{ width:'100%', borderRadius:12, border:'1.5px solid #E2E8F0', padding:'12px 14px', fontSize:'0.875rem', background:'#F8FAFC', outline:'none', resize:'none', fontFamily:'inherit' }} />
-            </div>
-
-            <div style={{ display:'flex', gap:12 }}>
-              <button onClick={()=>setPayModal(false)}
-                style={{ flex:1, height:48, borderRadius:12, border:'none', background:'#F1F5F9', color:'#64748B', fontWeight:700, cursor:'pointer' }}>
-                Cancel
-              </button>
-              <button onClick={submitPayment} disabled={submitting}
-                style={{ flex:2, height:48, borderRadius:12, border:'none', background:'#4F46E5', color:'white', fontWeight:800, cursor:'pointer', opacity:submitting?0.7:1 }}>
-                {submitting ? 'Saving…' : 'Confirm Payment'}
-              </button>
-            </div>
+            <button onClick={submitPayment} disabled={submitting} style={{ height:48, borderRadius:12, border:'none', background:'#4F46E5', color:'white', fontWeight:800, cursor:'pointer' }}>
+              {submitting ? 'Processing...' : 'Confirm Payment'}
+            </button>
           </div>
         )}
       </Modal>
 
-      {/* ── Payment History Modal ── */}
+      {/* History Modal */}
       <Modal isOpen={histModal} onClose={()=>setHistModal(false)} title="Payment History" width="560px">
         {selectedInvoice && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-            <div style={{ background:'#F8FAFC', borderRadius:12, padding:14 }}>
-              <p style={{ margin:0, fontWeight:800 }}>{selectedInvoice.student_name}</p>
-              <p style={{ margin:'4px 0 0', fontSize:'0.8125rem', color:'#64748B' }}>{selectedInvoice.invoice_number}</p>
-            </div>
-            {histPayments.length === 0 ? (
-              <p style={{ textAlign:'center', color:'#94A3B8', padding:30 }}>No payments recorded yet.</p>
-            ) : histPayments.map((p:any) => (
-              <div key={p.id} style={{ border:'1px solid #F1F5F9', borderRadius:16, padding:16 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <div>
-                    <p style={{ margin:0, fontWeight:800, color:'#10B981', fontSize:'1.125rem' }}>
-                      ₹{parseFloat(p.amount).toLocaleString('en-IN')}
-                    </p>
-                    <p style={{ margin:'4px 0 0', fontSize:'0.75rem', color:'#94A3B8' }}>
-                      {p.payment_date} • {p.payment_method} {p.reference_number ? `• ${p.reference_number}` : ''}
-                    </p>
-                  </div>
-                  <span style={{ fontSize:'0.6875rem', fontWeight:700, color:'#64748B' }}>by {p.recorded_by}</span>
+            {histPayments.length === 0 ? <p style={{ textAlign:'center', color:'#94A3B8', padding:30 }}>No payments recorded yet.</p> : 
+              histPayments.map((p:any) => (
+                <div key={p.id} style={{ border:'1px solid #F1F5F9', borderRadius:16, padding:16 }}>
+                  <p style={{ margin:0, fontWeight:800, color:'#10B981' }}>₹{parseFloat(p.amount).toLocaleString('en-IN')}</p>
+                  <p style={{ margin:'4px 0 0', fontSize:'0.75rem', color:'#94A3B8' }}>{p.payment_date} • {p.payment_method}</p>
                 </div>
-                {p.notes && <p style={{ margin:'8px 0 0', fontSize:'0.8125rem', color:'#64748B' }}>{p.notes}</p>}
-              </div>
-            ))}
+              ))
+            }
           </div>
         )}
       </Modal>

@@ -113,24 +113,25 @@ def update_student(student_id, data):
     if not conn: return False
     try:
         cursor = conn.cursor()
-        query = """
-            UPDATE students 
-            SET name=%s, class_name=%s, section=%s, email=%s, phone=%s, parent_phone=%s, dob=%s, is_on_hold=%s 
-            WHERE id=%s
-        """
-        values = (
-            data.get('name'), data.get('class_name'), data.get('section'), 
-            data.get('email'), data.get('phone'), data.get('parent_phone'), 
-            data.get('dob'), data.get('is_on_hold', False), student_id
-        )
-        cursor.execute(query, values)
+        if not data: return True
+        
+        fields = []
+        values = []
+        for key, value in data.items():
+            fields.append(f"{key} = %s")
+            values.append(value)
+        
+        values.append(student_id)
+        query = f"UPDATE students SET {', '.join(fields)} WHERE id = %s"
+        
+        cursor.execute(query, tuple(values))
         conn.commit()
-        return cursor.rowcount > 0
+        return True
     except Error as e:
         print(f"Error updating student: {e}")
         return False
     finally:
-        if conn.is_connected():
+        if conn and conn.is_connected():
             cursor.close()
             conn.close()
 
@@ -826,27 +827,99 @@ def get_or_create_invoice(cursor, student_id: str, school_id: str, year: int, mo
     cursor.execute("SELECT * FROM fee_invoices WHERE invoice_number = %s", (inv_no,))
     return cursor.fetchone()
 
+from datetime import datetime, date, timedelta
+
+LATE_FINE_PER_MONTH = 50
+
+def make_invoice_number(student_id: str, year: int, month: int) -> str:
+    return f"INV-{student_id}-{year}{month:02d}"
+
+def get_or_create_invoice(cursor, student_id: str, school_id: str, year: int, month: int):
+    inv_no = make_invoice_number(student_id, year, month)
+    cursor.execute("SELECT * FROM fee_invoices WHERE invoice_number = %s", (inv_no,))
+    inv = cursor.fetchone()
+    if inv:
+        return inv
+
+    # Fetch student fees
+    cursor.execute(
+        "SELECT total_monthly_fee FROM students WHERE id = %s", (student_id,)
+    )
+    s = cursor.fetchone()
+    monthly = float(s["total_monthly_fee"] or 0) if s else 0
+
+    # Get previous unpaid balance from last invoice
+    cursor.execute("""
+        SELECT balance_due FROM fee_invoices
+        WHERE student_id = %s AND (year < %s OR (year = %s AND month < %s))
+        ORDER BY year DESC, month DESC LIMIT 1
+    """, (student_id, year, year, month))
+    prev = cursor.fetchone()
+    previous_due = float(prev["balance_due"] or 0) if prev else 0
+
+    # Late fine: ₹50 for each overdue month (invoices with balance > 0 before this month)
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM fee_invoices
+        WHERE student_id = %s AND status IN ('UNPAID','OVERDUE')
+          AND (year < %s OR (year = %s AND month < %s))
+    """, (student_id, year, year, month))
+    overdue_row = cursor.fetchone()
+    overdue_months = int(overdue_row["cnt"] or 0) if overdue_row else 0
+    late_fine = overdue_months * LATE_FINE_PER_MONTH
+    
+    total_payable = monthly + previous_due + late_fine
+    due_date = date(year, month, 10)  # Due on 10th of each month
+
+    cursor.execute("""
+        INSERT INTO fee_invoices
+          (student_id, school_id, invoice_number, month, year,
+           monthly_fee, previous_due, late_fine, total_payable,
+           amount_paid, balance_due, status, due_date)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,0,%s,'UNPAID',%s)
+    """, (student_id, school_id, inv_no, month, year,
+          monthly, previous_due, late_fine, total_payable,
+          total_payable, due_date.strftime("%Y-%m-%d")))
+
+    cursor.execute("SELECT * FROM fee_invoices WHERE invoice_number = %s", (inv_no,))
+    return cursor.fetchone()
+
 def get_fee_stats(school_id: str = ''):
     conn = create_connection()
     if not conn: return {"collected": 0, "outstanding": 0, "rate": 0, "monthly": []}
     try:
         cursor = conn.cursor(dictionary=True)
         now = datetime.now()
-        
-        # CUMULATIVE TOTALS (Total ever paid vs Total still due for this school)
+        m, y = now.month, now.year
+
+        # 1. Ensure invoices for ALL students for this month (matching Fees page logic)
+        cursor.execute("SELECT id FROM students WHERE school_id=%s", (school_id,))
+        all_students = cursor.fetchall()
+        for s in all_students:
+            get_or_create_invoice(cursor, s["id"], school_id, y, m)
+        conn.commit()
+
+        # 2. CUMULATIVE TOTALS (Real Database Aggregation)
+        # Total Collected: Sum of all payments recorded for this school
+        cursor.execute("SELECT SUM(amount) as collected FROM fee_payments WHERE school_id = %s", (school_id,))
+        p_row = cursor.fetchone()
+        total_collected = float(p_row['collected'] or 0)
+
+        # Total Outstanding: Balance of the latest invoice for each student
         cursor.execute("""
-            SELECT SUM(amount_paid) as collected, SUM(balance_due) as outstanding
-            FROM fee_invoices
-            WHERE school_id = %s
-        """, (school_id,))
+            SELECT SUM(fi.balance_due) as outstanding
+            FROM fee_invoices fi
+            INNER JOIN (
+                SELECT student_id, MAX(year * 12 + month) as latest_period
+                FROM fee_invoices
+                WHERE school_id = %s
+                GROUP BY student_id
+            ) latest ON fi.student_id = latest.student_id 
+              AND (fi.year * 12 + fi.month) = latest.latest_period
+            WHERE fi.school_id = %s
+        """, (school_id, school_id))
         
-        totals = cursor.fetchone()
-        real_collected = float(totals['collected'] or 0)
-        real_outstanding = float(totals['outstanding'] or 0)
-        
-        # Use real data if available, otherwise use demo values (optional fallback)
-        total_collected = real_collected if real_collected > 0 else 7292.0
-        total_outstanding = real_outstanding if real_outstanding > 0 else 2150.0
+        o_row = cursor.fetchone()
+        total_outstanding = float(o_row['outstanding'] or 0)
         
         total_expected = total_collected + total_outstanding
         collection_rate = (total_collected / total_expected * 100) if total_expected > 0 else 0
@@ -857,11 +930,11 @@ def get_fee_stats(school_id: str = ''):
         
         for i in range(5, -1, -1):
             target_date = now - timedelta(days=i*30)
-            m, y = target_date.month, target_date.year
+            target_m, target_y = target_date.month, target_date.year
             cursor.execute("""
                 SELECT SUM(amount_paid) as val FROM fee_invoices
                 WHERE school_id = %s AND month = %s AND year = %s
-            """, (school_id, m, y))
+            """, (school_id, target_m, target_y))
             r = cursor.fetchone()
             val = float(r['val'] or 0)
             
@@ -869,7 +942,7 @@ def get_fee_stats(school_id: str = ''):
             if val == 0:
                 val = 4000 + (i * 1200) % 3000
                 
-            monthly_stats.append({"month": months_list[m-1], "value": val})
+            monthly_stats.append({"month": months_list[target_m-1], "value": val})
             
         return {
             "collected": round(total_collected, 2),
@@ -914,10 +987,10 @@ def get_dashboard_summary(school_id: str = ''):
         cursor.execute("SELECT COUNT(*) as count FROM leave_requests WHERE school_id = %s AND status = 'PENDING'", (school_id,))
         leaves_count = cursor.fetchone()['count']
         
-        cursor.execute("SELECT COUNT(*) as count FROM monitoring_flags WHERE school_id = %s AND resolved = 0", (school_id,))
+        cursor.execute("SELECT COUNT(*) as count FROM student_flags WHERE school_id = %s AND is_resolved = FALSE", (school_id,))
         at_risk_count = cursor.fetchone()['count']
         
-        cursor.execute("SELECT COUNT(*) as count FROM promotion_reviews WHERE school_id = %s AND status = 'PENDING'", (school_id,))
+        cursor.execute("SELECT COUNT(*) as count FROM promotion_records WHERE school_id = %s AND status = 'PENDING'", (school_id,))
         promos_count = cursor.fetchone()['count']
         
         return {

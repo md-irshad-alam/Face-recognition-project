@@ -102,7 +102,7 @@ export const StatsGrid = styled.div`
 export const StatCard = styled.div`
   background: white;
   border-radius: 24px;
-  padding: 24px;
+  padding: 16px 20px;
   border: 1px solid #E2E8F0;
   display: flex;
   justify-content: space-between;
@@ -131,15 +131,15 @@ export const StatCard = styled.div`
 `;
 
 export const StatIconBox = styled.div<{ $color: string }>`
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: ${p => p.$color}15;
   color: ${p => p.$color};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
 `;
 
 export const StatInfo = styled.div`
@@ -155,7 +155,7 @@ export const StatInfo = styled.div`
   }
 
   h2 {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: #1E293B;
     margin: 0;
@@ -190,7 +190,7 @@ export const Card = styled.div`
   background: white;
   border-radius: 28px;
   border: 1px solid #E2E8F0;
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;

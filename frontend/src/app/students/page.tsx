@@ -5,7 +5,8 @@ import {
   RiAddLine, RiSearchLine, RiFilterLine, RiUserAddLine, 
   RiArrowLeftLine, RiArrowRightLine, RiDeleteBinLine, RiEditLine,
   RiCheckLine, RiCloseLine,
-  RiUploadCloud2Line
+  RiUploadCloud2Line,
+  RiIdCardLine
 } from 'react-icons/ri'
 import { useRouter } from 'next/navigation'
 import { useStudents, Student } from '@/hooks/useStudents'
@@ -132,20 +133,32 @@ export default function StudentsPage() {
       <SC.ScrollableContent>
         <SC.StatsGrid>
           <SC.StatCard>
-            <SC.StatValue>{students.length}</SC.StatValue>
-            <SC.StatLabel>Total Enrolled</SC.StatLabel>
+            <SC.StatIconBox $bg="#EEF2FF" $color="#4F46E5"><RiUserAddLine /></SC.StatIconBox>
+            <SC.StatContent>
+              <SC.StatValue>{students.length}</SC.StatValue>
+              <SC.StatLabel>Total Enrolled</SC.StatLabel>
+            </SC.StatContent>
           </SC.StatCard>
           <SC.StatCard>
-            <SC.StatValue>{students.filter(s => !s.is_on_hold).length}</SC.StatValue>
-            <SC.StatLabel>Active Students</SC.StatLabel>
+            <SC.StatIconBox $bg="#F0FDF4" $color="#22C55E"><RiCheckLine /></SC.StatIconBox>
+            <SC.StatContent>
+              <SC.StatValue>{students.filter(s => !s.is_on_hold).length}</SC.StatValue>
+              <SC.StatLabel>Active Students</SC.StatLabel>
+            </SC.StatContent>
           </SC.StatCard>
           <SC.StatCard>
-            <SC.StatValue>{students.filter(s => s.is_on_hold).length}</SC.StatValue>
-            <SC.StatLabel>On Hold</SC.StatLabel>
+            <SC.StatIconBox $bg="#FEF2F2" $color="#EF4444"><RiCloseLine /></SC.StatIconBox>
+            <SC.StatContent>
+              <SC.StatValue>{students.filter(s => s.is_on_hold).length}</SC.StatValue>
+              <SC.StatLabel>On Hold</SC.StatLabel>
+            </SC.StatContent>
           </SC.StatCard>
           <SC.StatCard>
-            <SC.StatValue>{new Set(students.map(s => s.class_name)).size}</SC.StatValue>
-            <SC.StatLabel>Active Classes</SC.StatLabel>
+            <SC.StatIconBox $bg="#F5F3FF" $color="#8B5CF6"><RiIdCardLine /></SC.StatIconBox>
+            <SC.StatContent>
+              <SC.StatValue>{new Set(students.map(s => s.class_name)).size}</SC.StatValue>
+              <SC.StatLabel>Active Classes</SC.StatLabel>
+            </SC.StatContent>
           </SC.StatCard>
         </SC.StatsGrid>
 

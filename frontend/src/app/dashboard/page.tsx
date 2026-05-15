@@ -292,7 +292,6 @@ export default function DashboardPage() {
           <SC.CardHeader>
             <div className="title-area">
               <h3>Attendance Trajectory</h3>
-              <p>Weekly participation tracking</p>
             </div>
             <SC.ToggleGroup>
               <SC.ToggleButton $active={activeTrendTab === 'daily'} onClick={() => setActiveTrendTab('daily')}>Daily</SC.ToggleButton>
@@ -308,7 +307,6 @@ export default function DashboardPage() {
           <SC.CardHeader>
             <div className="title-area">
               <h3>Financial Pulse</h3>
-              <p>Monthly fee collection</p>
             </div>
           </SC.CardHeader>
           <SC.PieChartWrapper>
@@ -336,11 +334,6 @@ export default function DashboardPage() {
                 <RiShieldLine color="#EF4444" size={18} />
                 Flagged / At-Risk Students
               </h3>
-              <p>
-                {atRiskStudents.length > 0
-                  ? `${atRiskStudents.length} student${atRiskStudents.length > 1 ? 's' : ''} need attention`
-                  : 'No active flags — all students attending normally'}
-              </p>
             </div>
             <button onClick={handleRunCheck} disabled={isRunningCheck}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid #E2E8F0', background: 'white', color: '#64748B', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'Poppins, Inter, sans-serif' }}>

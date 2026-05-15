@@ -331,7 +331,7 @@ export const MetricsRow = styled.div`
 export const MetricCard = styled.div<{ $variant?: 'blue' | 'white' | 'red' }>`
   background: ${p => p.$variant === 'blue' ? '#EEF2FF' : 'white'};
   border-radius: 24px;
-  padding: 1.5rem;
+  padding: 1rem;
   border: 1px solid ${p => p.$variant === 'blue' ? 'transparent' : '#E2E8F0'};
   display: flex;
   flex-direction: column;

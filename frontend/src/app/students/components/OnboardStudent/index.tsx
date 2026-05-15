@@ -23,7 +23,7 @@ interface OnboardStudentProps {
   initialData?: Student | null;
 }
 
-const GRADES = ['Play', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+const GRADES = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
 export default function OnboardStudent({ onClear, initialData }: OnboardStudentProps) {
   const { createStudent, updateStudent } = useStudents();
@@ -172,7 +172,6 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
           </SC.StepNumber>
           <SC.StepText>
             <SC.StepLabel>Basic Info</SC.StepLabel>
-            <SC.StepStatus>{currentStep === 1 ? 'Active' : 'Completed'}</SC.StepStatus>
           </SC.StepText>
         </SC.Step>
         
@@ -184,7 +183,6 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
           </SC.StepNumber>
           <SC.StepText>
             <SC.StepLabel>Guardian</SC.StepLabel>
-            <SC.StepStatus>{currentStep === 2 ? 'Active' : currentStep > 2 ? 'Completed' : 'Pending'}</SC.StepStatus>
           </SC.StepText>
         </SC.Step>
 
@@ -194,7 +192,6 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
           <SC.StepNumber $active={currentStep === 3}>3</SC.StepNumber>
           <SC.StepText>
             <SC.StepLabel>Review</SC.StepLabel>
-            <SC.StepStatus>{currentStep === 3 ? 'Active' : 'Pending'}</SC.StepStatus>
           </SC.StepText>
         </SC.Step>
       </SC.StepperContainer>
@@ -208,61 +205,61 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
             </SC.SectionTitle>
 
             <SC.FormGrid>
-             <SC.PhotoUploadWrapper>
-                <SC.PhotoUpload onClick={handlePhotoClick}>
-                  {photoPreview ? (
-                    <img src={photoPreview.startsWith('/') ? `http://127.0.0.1:8000${photoPreview}` : photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <>
-                      <RiCameraLine size={32} color="#94A3B8" />
-                      <SC.PhotoLabel>Upload Photo</SC.PhotoLabel>
-                    </>
-                  )}
-                </SC.PhotoUpload>
-                <div style={{ background: '#F8FAFC', padding: '10px 24px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.6875rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Institutional ID</span>
-                  <span style={{ fontWeight: 800, color: '#4F46E5', fontSize: '1rem' }}>{formData.id}</span>
-                </div>
-              </SC.PhotoUploadWrapper>
+              <SC.TopSection>
+                <SC.PhotoUploadWrapper>
+                  <SC.PhotoUpload onClick={handlePhotoClick}>
+                    {photoPreview ? (
+                      <img src={photoPreview.startsWith('/') ? `http://127.0.0.1:8000${photoPreview}` : photoPreview} alt="Preview" />
+                    ) : (
+                      <>
+                        <RiCameraLine size={32} color="#94A3B8" />
+                        <SC.PhotoLabel>Upload Photo</SC.PhotoLabel>
+                      </>
+                    )}
+                  </SC.PhotoUpload>
+                </SC.PhotoUploadWrapper>
+
+                <SC.RightFields>
+                  <SC.InputGroup>
+                    <SC.Label>First Name</SC.Label>
+                    <SC.Input 
+                      placeholder="e.g. Alexander" 
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                    />
+                  </SC.InputGroup>
+                  <SC.InputGroup>
+                    <SC.Label>Last Name</SC.Label>
+                    <SC.Input 
+                      placeholder="e.g. Hamilton" 
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                    />
+                  </SC.InputGroup>
+                  <SC.InputGroup>
+                    <SC.Label>Gender</SC.Label>
+                    <SC.Select 
+                      value={formData.gender}
+                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </SC.Select>
+                  </SC.InputGroup>
+                  <SC.InputGroup>
+                    <SC.Label>Section</SC.Label>
+                    <SC.Input 
+                      placeholder="e.g. A, B, C" 
+                      value={formData.section}
+                      onChange={(e) => setFormData({...formData, section: e.target.value})}
+                    />
+                  </SC.InputGroup>
+                </SC.RightFields>
+              </SC.TopSection>
 
             <SC.InputsGrid>
 
-              <SC.InputGroup>
-                <SC.Label>First Name</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. Alexander" 
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                />
-              </SC.InputGroup>
-              <SC.InputGroup>
-                <SC.Label>Last Name</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. Hamilton" 
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                />
-              </SC.InputGroup>
-
-              <SC.InputGroup>
-                <SC.Label>Gender</SC.Label>
-                <SC.Select 
-                  value={formData.gender}
-                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </SC.Select>
-              </SC.InputGroup>
-              <SC.InputGroup>
-                <SC.Label>Section</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. A, B, C" 
-                  value={formData.section}
-                  onChange={(e) => setFormData({...formData, section: e.target.value})}
-                />
-              </SC.InputGroup>
 
               <SC.InputGroup>
                 <SC.Label>Academic Grade</SC.Label>
@@ -301,7 +298,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 >
                   <option value="Regular">Regular</option>
                   <option value="Hosteler">Hosteler</option>
-                  <option value="Fee">Fee</option>
+                  {/* <option value="Fee">Fee</option> */}
                 </SC.Select>
               </SC.InputGroup>
 
@@ -507,22 +504,21 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
             </div>
           </SC.ReviewSection>
         )}
+        <SC.ActionFooter style={{ marginTop: 'auto', border: 'none', padding: '16px 0 0', background: 'transparent' }}>
+          <div style={{ flex: 1 }}>
+            {currentStep > 1 && (
+              <SC.BackButton onClick={handleBack}>
+                <RiArrowLeftLine size={20} />
+                Go Back
+              </SC.BackButton>
+            )}
+          </div>
+          <SC.NextButton onClick={handleNext} disabled={isSubmitting}>
+            {isSubmitting ? 'Synchronizing...' : currentStep === 3 ? (isEditMode ? 'Update Record' : 'Confirm Enrollment') : 'Guardian Details'}
+            <RiArrowRightLine size={20} />
+          </SC.NextButton>
+        </SC.ActionFooter>
       </SC.FormCard>
-
-      <SC.ActionFooter>
-        <div style={{ flex: 1 }}>
-          {currentStep > 1 && (
-            <SC.BackButton onClick={handleBack}>
-              <RiArrowLeftLine size={20} />
-              Go Back
-            </SC.BackButton>
-          )}
-        </div>
-        <SC.NextButton onClick={handleNext} disabled={isSubmitting}>
-          {isSubmitting ? 'Synchronizing...' : currentStep === 3 ? (isEditMode ? 'Update Record' : 'Confirm Enrollment') : 'Guardian Details'}
-          <RiArrowRightLine size={20} />
-        </SC.NextButton>
-      </SC.ActionFooter>
     </SC.Container>
   );
 }

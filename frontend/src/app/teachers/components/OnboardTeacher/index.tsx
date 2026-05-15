@@ -442,24 +442,23 @@ export default function OnboardTeacher({ onClear, initialData }: OnboardTeacherP
             </SC.ReviewBox>
           </SC.Section>
         )}
+        <SC.Footer style={{ marginTop: 'auto', border: 'none', padding: '16px 0 0', background: 'transparent' }}>
+          <div style={{ flex: 1 }}>
+            {currentStep > 1 && (
+              <UIBackButton onClick={handleBack}>
+                Previous Step
+              </UIBackButton>
+            )}
+          </div>
+          <SC.FooterActions>
+            <SC.DraftButton onClick={() => toast.success('Profile draft archived.')}>Save as Draft</SC.DraftButton>
+            <SC.NextButton onClick={handleNext} disabled={isSubmitting}>
+              {isSubmitting ? 'Processing...' : currentStep === 5 ? (isEditMode ? 'Update Profile' : 'Confirm & Join Faculty') : 'Next Step'}
+              <RiArrowRightLine size={20} />
+            </SC.NextButton>
+          </SC.FooterActions>
+        </SC.Footer>
       </SC.FormCard>
-
-      <SC.Footer>
-        <div style={{ flex: 1 }}>
-          {currentStep > 1 && (
-            <UIBackButton onClick={handleBack}>
-              Previous Step
-            </UIBackButton>
-          )}
-        </div>
-        <SC.FooterActions>
-          <SC.DraftButton onClick={() => toast.success('Profile draft archived.')}>Save as Draft</SC.DraftButton>
-          <SC.NextButton onClick={handleNext} disabled={isSubmitting}>
-            {isSubmitting ? 'Processing...' : currentStep === 5 ? (isEditMode ? 'Update Profile' : 'Confirm & Join Faculty') : 'Next Step'}
-            <RiArrowRightLine size={20} />
-          </SC.NextButton>
-        </SC.FooterActions>
-      </SC.Footer>
     </SC.Container>
   );
 }

@@ -29,7 +29,7 @@ export const Header = styled.div`
   margin-bottom: 0.5rem;
   gap: 16px;
 
-  @media (max-width: 640px) {
+  @media (max-width: 740px) {
     flex-direction: column;
     align-items: stretch;
   }
@@ -52,8 +52,8 @@ export const Header = styled.div`
       margin: 0;
       font-weight: 500;
 
-      @media (max-width: 480px) {
-        font-size: 0.8125rem;
+      @media (max-width: 740px) {
+        display: none;
       }
     }
   }

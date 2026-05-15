@@ -106,7 +106,7 @@ def generate_monthly_invoices(current_user: dict = Depends(auth.require_admin)):
         students = cursor.fetchall()
         created = 0
         for s in students:
-            inv = get_or_create_invoice(cursor, s["id"], school_id, now.year, now.month)
+            inv = database.get_or_create_invoice(cursor, s["id"], school_id, now.year, now.month)
             if inv:
                 created += 1
         conn.commit()
@@ -140,7 +140,7 @@ def get_all_invoices(
         all_students = cursor.fetchall()
         for s in all_students:
             # get_or_create_invoice checks if it already exists by invoice_number
-            get_or_create_invoice(cursor, s["id"], school_id, y, m)
+            database.get_or_create_invoice(cursor, s["id"], school_id, y, m)
         conn.commit()
 
         query = """

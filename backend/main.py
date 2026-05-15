@@ -111,6 +111,10 @@ def get_todays_attendance_list(class_name: str = None, current_user: dict = Depe
 def get_stats(current_user: dict = Depends(auth.get_current_user)):
     return database.get_dashboard_stats(school_id=current_user.get('school_id', ''))
 
+@app.get("/summary")
+def get_summary(current_user: dict = Depends(auth.get_current_user)):
+    return database.get_dashboard_summary(school_id=current_user.get('school_id', ''))
+
 @app.get("/devices")
 def get_devices(current_user: dict = Depends(auth.get_current_user)):
     return database.get_active_devices()

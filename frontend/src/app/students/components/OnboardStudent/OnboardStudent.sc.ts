@@ -145,19 +145,28 @@ export const FormGrid = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  @media (max-width: 768px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
 `;
 
 export const PhotoUploadWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 16px;
-  width: 100%;
+
+  @media (max-width: 768px) {
+    grid-column: span 3;
+    align-items: center;
+  }
 `;
 
 export const PhotoUpload = styled.div`
   width: 180px;
-  height: 180px;
+  height: 200px;
   border-radius: 20px;
   border: 2px dashed ${props => props.theme.colors.border};
   display: flex;
@@ -168,10 +177,38 @@ export const PhotoUpload = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   background: #F8FAFC;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
   &:hover {
     border-color: ${props => props.theme.colors.primary};
     background: #EEF2FF;
+  }
+`;
+
+export const TopSection = styled.div`
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+
+  @media (max-width: 768px) {
+    display: contents;
+  }
+`;
+
+export const RightFields = styled.div`
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    display: contents;
   }
 `;
 
@@ -188,12 +225,8 @@ export const InputsGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+    display: contents;
   }
 `;
 

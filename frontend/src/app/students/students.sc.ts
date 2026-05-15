@@ -24,7 +24,7 @@ padding
   z-index: 10;
 
   @media (max-width: 768px) {
-    padding: 1.5rem 1.5rem 0.5rem;
+    padding: 1.5rem 0.5rem 0.5rem;
   }
 `;
 
@@ -67,10 +67,10 @@ export const StatCard = styled.div`
   background: white;
   border: 1px solid #E2E8F0;
   border-radius: 20px;
-  padding: 24px;
+  padding: 16px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 
@@ -82,15 +82,15 @@ export const StatCard = styled.div`
 `;
 
 export const StatIconBox = styled.div<{ $bg: string; $color: string }>`
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: ${p => p.$bg};
   color: ${p => p.$color};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
 `;
 
 export const StatContent = styled.div`
@@ -107,7 +107,7 @@ export const StatLabel = styled.span`
 `;
 
 export const StatValue = styled.span`
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #1E293B;
   line-height: 1.2;
@@ -117,14 +117,15 @@ export const Header = styled.div`
 padding-left:0.8rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   margin-bottom: 8px;
   gap: 20px;
 
   @media (max-width: 900px) {
-    
-    align-items:center;
+    flex-direction:column;
+    align-items:start;
     gap: 1.5rem;
+    // padding-left:0;
   }
 `;
 
@@ -204,6 +205,11 @@ export const SecondaryButton = styled.button`
   font-size: 0.9375rem;
   cursor: pointer;
   transition: all 0.2s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  
 
   &:hover {
     border-color: #94A3B8;
