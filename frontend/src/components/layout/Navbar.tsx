@@ -10,6 +10,7 @@ import {
 } from 'react-icons/ri'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/services/api'
+import SchoolTimingModal from './SchoolTimingModal'
 
 /* ── Styled Components ─────────────────────────────────────────────────────── */
 const NavbarContainer = styled.header`
@@ -249,6 +250,7 @@ interface NavbarProps { onMenuToggle?: () => void; }
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const { user, logout } = useAuth()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [timingOpen, setTimingOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -415,6 +417,11 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
             <DropdownItem>
               <RiUserLine size={16} /> Profile Settings
             </DropdownItem>
+            {(user?.role === 'admin' || user?.role === 'ORG_ADMIN') && (
+              <DropdownItem onClick={(e) => { e.stopPropagation(); setTimingOpen(true); setProfileOpen(false); }}>
+                <RiTimeLine size={16} /> School Timings
+              </DropdownItem>
+            )}
             <div style={{ height: 1, background: '#F1F5F9', margin: '2px 0' }} />
             <DropdownItem $danger onClick={(e) => { e.stopPropagation(); logout(); }}>
               <RiLogoutBoxRLine size={16} /> Sign Out
@@ -422,6 +429,8 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           </Dropdown>
         </ProfileWrap>
       </ActionsSection>
+      
+      {timingOpen && <SchoolTimingModal onClose={() => setTimingOpen(false)} />}
     </NavbarContainer>
   )
 }

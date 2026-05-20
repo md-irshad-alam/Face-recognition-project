@@ -170,3 +170,49 @@ CREATE TABLE IF NOT EXISTS payment_links (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id)
 );
+
+CREATE TABLE IF NOT EXISTS face_attendance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    date DATE NOT NULL,
+    status ENUM('present', 'absent') DEFAULT 'present',
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE IF NOT EXISTS fee_payment_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    invoice_id VARCHAR(100),
+    due_date DATE,
+    status ENUM('paid', 'pending', 'delayed') DEFAULT 'pending',
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE IF NOT EXISTS exam_marks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    exam_id INT,
+    subject VARCHAR(100),
+    marks_obtained DECIMAL(5,2),
+    total_marks DECIMAL(5,2),
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE IF NOT EXISTS risk_alerts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) UNIQUE,
+    risk_tier ENUM('HIGH', 'CRITICAL') NOT NULL,
+    calculated_attendance DECIMAL(5,2) NOT NULL,
+    pending_dues_count INT DEFAULT 0,
+    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    status ENUM('open', 'reviewed', 'resolved') DEFAULT 'open',
+    pre_rendered_message TEXT,
+    FOREIGN KEY (student_id) REFERENCES students(id)
+);
+
+CREATE TABLE IF NOT EXISTS school_settings (
+    school_id VARCHAR(50) PRIMARY KEY,
+    attendance_start_time TIME DEFAULT '08:00:00',
+    attendance_end_time TIME DEFAULT '09:00:00',
+    school_end_time TIME DEFAULT '15:00:00'
+);

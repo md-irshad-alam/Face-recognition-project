@@ -12,7 +12,7 @@ import database
 import auth
 import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
 from dataclasses import asdict
-from routers import exams, teachers, fees, whatsapp, students, auth as auth_router
+from routers import exams, teachers, fees, whatsapp, students, settings, auth as auth_router
 from routers import monitoring
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
 import migrate
@@ -30,6 +30,7 @@ app.include_router(fees.router)
 app.include_router(whatsapp.router)
 app.include_router(auth_router.router)
 app.include_router(monitoring.router)
+app.include_router(settings.router)
 
 # Pull origins from environment variable or fallback to production/localhost defaults
 default_origins = "https://visio.school,https://www.visio.school,http://localhost:3000,http://127.0.0.1:3000"

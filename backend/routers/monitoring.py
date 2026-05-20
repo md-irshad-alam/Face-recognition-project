@@ -478,3 +478,62 @@ def get_promotion_history(current_user: dict = Depends(auth.get_current_user)):
         return rows
     finally:
         cursor.close(); conn.close()
+
+# ══ PREDICTIVE ALERTS (CRON JOB INTEGRATION) ══════════════════════════════════
+
+@router.get("/admin/alerts")
+def get_predictive_alerts(current_user: dict = Depends(auth.require_admin)):
+    conn = database.create_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Note: the risk_alerts table might not have school_id, 
+        # so we join with students to ensure we only get alerts for this school
+        school_id = current_user.get("school_id", "")
+        cursor.execute("""
+            SELECT ra.* 
+            FROM risk_alerts ra
+            JOIN students s ON ra.student_id = s.id
+            WHERE s.school_id = %s
+            ORDER BY ra.detected_at DESC
+        """, (school_id,))
+        rows = cursor.fetchall()
+        for r in rows:
+            if r.get("detected_at") and hasattr(r["detected_at"], "strftime"):
+                r["detected_at"] = r["detected_at"].strftime("%Y-%m-%d %H:%M:%S")
+        return rows
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close(); conn.close()
+
+class AlertStatusUpdate(BaseModel):
+    status: str
+
+@router.put("/admin/alerts/{alert_id}/status")
+def update_alert_status(alert_id: int, req: AlertStatusUpdate, current_user: dict = Depends(auth.require_admin)):
+    conn = database.create_connection()
+    cursor = conn.cursor()
+    try:
+        # Validate status
+        if req.status not in ('open', 'reviewed', 'resolved'):
+            raise HTTPException(status_code=400, detail="Invalid status")
+            
+        cursor.execute("""
+            UPDATE risk_alerts ra
+            JOIN students s ON ra.student_id = s.id
+            SET ra.status = %s
+            WHERE ra.id = %s AND s.school_id = %s
+        """, (req.status, alert_id, current_user.get("school_id", "")))
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Alert not found or access denied")
+            
+        conn.commit()
+        return {"message": "Alert status updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close(); conn.close()

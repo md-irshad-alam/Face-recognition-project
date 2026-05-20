@@ -165,11 +165,42 @@ def mark_attendance(student_id, school_id: str = ''):
     conn = create_connection()
     if not conn: return False
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Determine Status based on configured school timings
+        cursor.execute("SELECT attendance_start_time, attendance_end_time, school_end_time FROM school_settings WHERE school_id = %s", (school_id,))
+        settings = cursor.fetchone()
+        
+        status = 'Present'
+        if settings:
+            import datetime
+            now = datetime.datetime.now().time()
+            current_sec = now.hour * 3600 + now.minute * 60 + now.second
+            
+            # Helper to extract seconds from MySQL timedelta or string
+            def get_sec(t, default):
+                if not t: return default
+                if hasattr(t, 'total_seconds'): return t.total_seconds()
+                if isinstance(t, str):
+                    parts = list(map(int, t.split(':')))
+                    return parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) > 2 else 0)
+                return default
+
+            att_start = get_sec(settings.get('attendance_start_time'), 8 * 3600)
+            att_end = get_sec(settings.get('attendance_end_time'), 9 * 3600)
+            school_end = get_sec(settings.get('school_end_time'), 15 * 3600)
+            
+            if current_sec <= att_end:
+                status = 'Present'
+            elif att_end < current_sec <= school_end:
+                status = 'Partial Present'
+            else:
+                status = 'Absent'
+
         cursor.execute("""
             INSERT INTO attendance (student_id, date, check_in_time, status, school_id)
-            VALUES (%s, CURDATE(), CURTIME(), 'Present', %s)
-        """, (student_id, school_id))
+            VALUES (%s, CURDATE(), CURTIME(), %s, %s)
+        """, (student_id, status, school_id))
         conn.commit()
         return True
     except Error as e:
