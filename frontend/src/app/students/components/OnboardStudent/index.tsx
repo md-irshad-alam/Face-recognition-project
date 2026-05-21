@@ -249,11 +249,14 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                   </SC.InputGroup>
                   <SC.InputGroup>
                     <SC.Label>Section</SC.Label>
-                    <SC.Input 
-                      placeholder="e.g. A, B, C" 
+                    <SC.Select 
                       value={formData.section}
                       onChange={(e) => setFormData({...formData, section: e.target.value})}
-                    />
+                    >
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                    </SC.Select>
                   </SC.InputGroup>
                 </SC.RightFields>
               </SC.TopSection>

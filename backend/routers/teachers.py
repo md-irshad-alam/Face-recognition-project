@@ -53,6 +53,20 @@ async def add_teacher(
         existing = database.get_teacher_by_id(id)
         if existing:
             raise HTTPException(status_code=400, detail="Teacher ID already exists")
+            
+        conn = database.create_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM teachers WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    raise HTTPException(status_code=400, detail="A teacher with this email already exists")
+                cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+                if cursor.fetchone():
+                    raise HTTPException(status_code=400, detail="A user account with this email already exists")
+            finally:
+                cursor.close()
+                conn.close()
 
         photo_url = None
         if photo:

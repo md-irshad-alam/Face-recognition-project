@@ -19,14 +19,13 @@ const NavbarContainer = styled.header`
   border-bottom: 1px solid #E2E8F0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0 32px;
   position: sticky;
   top: 0;
   z-index: 90;
-  gap: 16px;
+  gap: 24px;
   font-family: 'Poppins', 'Inter', sans-serif;
-  @media (max-width: 1024px) { padding: 0 16px; }
+  @media (max-width: 1024px) { padding: 0 16px; gap: 16px; }
 `
 const HamburgerBtn = styled.button`
   display: none;
@@ -35,9 +34,39 @@ const HamburgerBtn = styled.button`
   &:hover { background: #F1F5F9; color: #4F46E5; }
   @media (max-width: 1024px) { display: flex; align-items: center; justify-content: center; }
 `
+
+const NavLogoWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  @media (max-width: 1024px) {
+    margin-right: 8px;
+  }
+`
+const NavLogoIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`
+const NavLogoTitle = styled.h2`
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: #312E81;
+  margin: 0;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  font-family: 'Poppins', 'Inter', sans-serif;
+  @media (max-width: 480px) { display: none; }
+`
+
 const SearchSection = styled.div`
-  flex: 1; max-width: 480px; position: relative;
-  @media (max-width: 480px) { max-width: none; }
+  width: 100%; max-width: 380px; position: relative;
+  margin-left: auto;
+  @media (max-width: 480px) { max-width: none; margin-left: 0; flex: 1; }
 `
 const SearchIconWrap = styled.div`
   position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
@@ -317,9 +346,22 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
   return (
     <NavbarContainer>
-      <HamburgerBtn id="sidebar-hamburger" aria-label="Open navigation menu" onClick={onMenuToggle}>
-        <RiMenuLine size={22} />
-      </HamburgerBtn>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <HamburgerBtn id="sidebar-hamburger" aria-label="Open navigation menu" onClick={onMenuToggle}>
+          <RiMenuLine size={22} />
+        </HamburgerBtn>
+
+        <NavLogoWrap>
+          <NavLogoIcon>
+            <img
+              src="/visio-logo.png"
+              alt="Visio Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </NavLogoIcon>
+          <NavLogoTitle>VISIO</NavLogoTitle>
+        </NavLogoWrap>
+      </div>
 
       <SearchSection>
         <SearchIconWrap><RiSearchLine size={16} /></SearchIconWrap>

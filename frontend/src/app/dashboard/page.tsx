@@ -45,6 +45,16 @@ export default function DashboardPage() {
   const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [isGeneratingPromo, setIsGeneratingPromo] = useState(false);
 
+  // Teacher Attendance (Staff Stats)
+  const { data: staffStats } = useQuery({
+    queryKey: ['schedule', 'staff-stats'],
+    queryFn: async () => {
+      try { return await api.get<any>('/schedule/staff-stats'); }
+      catch { return { present: 0, total: 0, absent: 0 }; }
+    },
+    refetchInterval: 60_000 // refresh every 60 seconds
+  });
+
   // Pending Leaves (Only for modal display)
   const { data: pendingLeaves = [] } = useQuery({
     queryKey: ['admin', 'pending-leaves'],
@@ -282,6 +292,23 @@ export default function DashboardPage() {
           </SC.StatInfo>
           <div className="sparkline-box">
             <Line key={`teachers-${displayStats.teachers}`} data={getSparklineData([80, 82, 81, 84, 83, 84], displayStats.teachers, '#7C3AED')} options={sparklineOptions} />
+          </div>
+        </SC.StatCard>
+
+        <SC.StatCard>
+          <SC.StatInfo>
+            <label>Staff Present Today</label>
+            <h2 style={{ color: staffStats && staffStats.total > 0 && (staffStats.present / staffStats.total) < 0.5 ? '#EF4444' : '#10B981' }}>
+              {staffStats?.present ?? 0}
+              <span style={{ fontSize: '1rem', color: '#94A3B8', fontWeight: 500 }}> / {staffStats?.total ?? 0}</span>
+            </h2>
+          </SC.StatInfo>
+          <div className="sparkline-box">
+            <Line
+              key={`staff-${staffStats?.present}`}
+              data={getSparklineData([0, 0, 0, 0, 0, staffStats?.present ?? 0], staffStats?.present ?? 0, '#0EA5E9')}
+              options={sparklineOptions}
+            />
           </div>
         </SC.StatCard>
       </SC.StatsGrid>

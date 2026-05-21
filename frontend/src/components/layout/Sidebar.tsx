@@ -9,6 +9,7 @@ import {
   RiGroupLine,
   RiUserStarLine,
   RiCalendarCheckLine,
+  RiCalendarEventLine,
   RiHandCoinLine,
   RiTimeLine,
   RiWhatsappLine,
@@ -44,7 +45,7 @@ const SidebarPanel = styled.aside<{ $collapsed: boolean }>`
   border-right: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
-  padding: 24px 0;
+  padding: 0;
   position: fixed;
   left: 0;
   top: 0;
@@ -73,11 +74,13 @@ const LogoSection = styled.div<{ $collapsed: boolean }>`
   display: flex;
   flex-direction: ${p => p.$collapsed ? 'column-reverse' : 'row'};
   align-items: center;
-  justify-content: ${p => p.$collapsed ? 'flex-start' : 'space-between'};
-  padding: ${p => p.$collapsed ? '12px 0 24px 0' : '8px 16px 32px 20px'};
-  gap: ${p => p.$collapsed ? '20px' : '0'};
-  min-height: 40px;
+  justify-content: ${p => p.$collapsed ? 'flex-end' : 'space-between'};
+  padding: ${p => p.$collapsed ? '18px 0 24px 0' : '0 16px 0 20px'};
+  height: ${p => p.$collapsed ? 'auto' : '64px'};
+  min-height: 64px;
+  gap: ${p => p.$collapsed ? '24px' : '0'};
   overflow: hidden;
+  flex-shrink: 0;
 `
 
 const LogoInner = styled.div<{ $collapsed: boolean }>`
@@ -246,6 +249,7 @@ const Tooltip = styled.div`
 
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: RiDashboardLine,    href: '/dashboard',          roles: ['admin', 'teacher'] },
+  { label: 'Schedule',       icon: RiCalendarEventLine,href: '/schedule',           roles: ['admin', 'teacher'] },
   { label: 'Students',       icon: RiGroupLine,         href: '/students',           roles: ['admin', 'teacher'] },
   { label: 'Teachers',       icon: RiUserStarLine,      href: '/teachers',           roles: ['admin'] },
   { label: 'Attendance',     icon: RiCalendarCheckLine, href: '/attendance',         roles: ['admin', 'teacher'] },

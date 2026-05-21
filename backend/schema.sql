@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS teachers (
     office_days VARCHAR(100),
     office_time VARCHAR(100),
     assigned_classes TEXT,
+    subjects_qualified VARCHAR(255),
     notifications TEXT,
     status VARCHAR(20) DEFAULT 'active',
     is_phd BOOLEAN DEFAULT FALSE,
@@ -215,4 +216,41 @@ CREATE TABLE IF NOT EXISTS school_settings (
     attendance_start_time TIME DEFAULT '08:00:00',
     attendance_end_time TIME DEFAULT '09:00:00',
     school_end_time TIME DEFAULT '15:00:00'
+);
+
+CREATE TABLE IF NOT EXISTS master_timetable (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    day_of_week VARCHAR(20) NOT NULL,
+    period_number INT NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    classes JSON,
+    teacher_id VARCHAR(50) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+);
+
+CREATE TABLE IF NOT EXISTS staff_attendance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_id VARCHAR(50) NOT NULL,
+    date DATE NOT NULL,
+    check_in_time TIME,
+    status ENUM('present', 'absent') DEFAULT 'present',
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id)
+);
+
+CREATE TABLE IF NOT EXISTS substitution_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    period_number INT NOT NULL,
+    absent_teacher_id VARCHAR(50) NOT NULL,
+    substitute_teacher_id VARCHAR(50) NOT NULL,
+    class_name VARCHAR(50) NOT NULL,
+    section VARCHAR(10) NOT NULL,
+    subject VARCHAR(100) NOT NULL,
+    school_id VARCHAR(50) NOT NULL DEFAULT '',
+    FOREIGN KEY (absent_teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY (substitute_teacher_id) REFERENCES teachers(id)
 );

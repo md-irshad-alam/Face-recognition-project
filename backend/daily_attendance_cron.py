@@ -24,22 +24,63 @@ def run_daily_attendance_sweep():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Step 1: Identify students who have NO attendance record for today
-        # We group this by school to respect multi-tenant settings
-        query = """
+        # Step 0: Identify schools that are OPEN today (not a holiday or week-off)
+        cursor.execute("SELECT DISTINCT school_id FROM students")
+        all_schools = [row['school_id'] for row in cursor.fetchall()]
+        
+        today = datetime.now().date()
+        day_name = today.strftime("%A")
+        
+        open_schools = []
+        for sid in all_schools:
+            is_off = False
+            
+            # Check week off
+            cursor.execute("SELECT week_off_days FROM school_settings WHERE school_id = %s", (sid,))
+            settings = cursor.fetchone()
+            if settings and settings.get('week_off_days'):
+                import json
+                try:
+                    week_offs = json.loads(settings['week_off_days'])
+                    if day_name in week_offs:
+                        is_off = True
+                except:
+                    pass
+            
+            # Check holiday
+            if not is_off:
+                cursor.execute("""
+                    SELECT id FROM school_holidays 
+                    WHERE school_id = %s AND %s >= start_date AND %s <= end_date
+                """, (sid, today, today))
+                if cursor.fetchone():
+                    is_off = True
+                    
+            if not is_off:
+                open_schools.append(sid)
+        
+        if not open_schools:
+            print(f"All schools are off today ({day_name} / Holiday). Skipping attendance sweep.")
+            return
+
+        # Format open_schools for SQL IN clause
+        format_strings = ','.join(['%s'] * len(open_schools))
+        
+        # Step 1: Identify students who have NO attendance record for today in OPEN schools
+        query = f"""
             SELECT s.id as student_id, s.school_id
             FROM students s
             LEFT JOIN attendance a ON s.id = a.student_id AND a.date = CURDATE()
-            WHERE a.id IS NULL AND s.is_on_hold = FALSE
+            WHERE a.id IS NULL AND s.is_on_hold = FALSE AND s.school_id IN ({format_strings})
         """
-        cursor.execute(query)
+        cursor.execute(query, tuple(open_schools))
         missing_students = cursor.fetchall()
 
         if not missing_students:
-            print("All active students have an attendance record today.")
+            print("All active students in open schools have an attendance record today.")
             return
 
-        print(f"Found {len(missing_students)} students missing attendance today. Marking 'Absent'...")
+        print(f"Found {len(missing_students)} students missing attendance today in open schools. Marking 'Absent'...")
 
         # Step 2: Batch insert 'Absent' records for these students
         insert_query = """

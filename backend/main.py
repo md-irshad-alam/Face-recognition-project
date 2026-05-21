@@ -12,7 +12,7 @@ import database
 import auth
 import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
 from dataclasses import asdict
-from routers import exams, teachers, fees, whatsapp, students, settings, auth as auth_router
+from routers import exams, teachers, fees, whatsapp, students, settings, schedule, auth as auth_router
 from routers import monitoring
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
 import migrate
@@ -31,6 +31,9 @@ app.include_router(whatsapp.router)
 app.include_router(auth_router.router)
 app.include_router(monitoring.router)
 app.include_router(settings.router)
+app.include_router(schedule.router)
+app.include_router(teachers.router)
+app.include_router(exams.router)
 
 # Pull origins from environment variable or fallback to production/localhost defaults
 default_origins = "https://visio.school,https://www.visio.school,http://localhost:3000,http://127.0.0.1:3000"
@@ -72,15 +75,19 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 def load_known_faces():
-    """Loads known faces from the 'faces' directory and populates the FAISS index."""
-    faces_dir = "faces"
-    if not os.path.exists(faces_dir):
-        os.makedirs(faces_dir)
-        return
-
+    """
+    Loads student AND teacher faces into the unified FAISS index.
+    - Student faces: from 'faces/' folder  → stored as plain student_id
+    - Teacher faces: from 'teacher_faces/' → stored with 'T_' prefix so
+      the scan-face handler can route to staff_attendance_logs instead.
+    """
     print("Loading known faces into optimized FAISS index...")
+
+    # ── Students ──────────────────────────────────────────────────────────────
+    faces_dir = "faces"
+    os.makedirs(faces_dir, exist_ok=True)
     for filename in os.listdir(faces_dir):
-        if filename.endswith((".jpg", ".jpeg", ".png")):
+        if filename.lower().endswith((".jpg", ".jpeg", ".png")):
             filepath = os.path.join(faces_dir, filename)
             try:
                 image = face_recognition.load_image_file(filepath)
@@ -88,10 +95,27 @@ def load_known_faces():
                 if encodings:
                     face_state.add_face(encodings[0], os.path.splitext(filename)[0])
             except Exception as e:
-                print(f"Error loading {filename}: {e}")
-    
+                print(f"Error loading student face {filename}: {e}")
+
+    # ── Teachers ──────────────────────────────────────────────────────────────
+    teacher_faces_dir = "teacher_faces"
+    os.makedirs(teacher_faces_dir, exist_ok=True)
+    for filename in os.listdir(teacher_faces_dir):
+        if filename.lower().endswith((".jpg", ".jpeg", ".png")):
+            filepath = os.path.join(teacher_faces_dir, filename)
+            try:
+                image = face_recognition.load_image_file(filepath)
+                encodings = face_recognition.face_encodings(image)
+                if encodings:
+                    teacher_id = os.path.splitext(filename)[0]
+                    # Prefix with 'T_' to distinguish from student IDs in the index
+                    face_state.add_face(encodings[0], f"T_{teacher_id}")
+            except Exception as e:
+                print(f"Error loading teacher face {filename}: {e}")
+
     face_engine.load_faces_into_index(face_state.known_face_encodings, face_state.known_face_names)
-    print(f"Total known faces loaded: {len(face_state.known_face_names)}")
+    print(f"Total known faces loaded: {len(face_state.known_face_names)} "
+          f"(students + teachers combined)")
 
 @app.on_event("startup")
 async def startup_event():
@@ -130,20 +154,82 @@ async def scan_face(payload: ScanRequest, background_tasks: BackgroundTasks, cur
 
         background_tasks.add_task(database.update_device_status, payload.device_id, current_user.get('full_name'), "Mobile", getattr(payload, 'battery', None))
 
-        student_id, metrics = face_engine.recognize_face(image_bytes)
+        matched_id, metrics = face_engine.recognize_face(image_bytes)
         school_id = current_user.get('school_id', '')
 
         if not metrics.face_found:
-            result = {"status": "error", "message": "No face detected", "attendance_marked": False, "device_id": payload.device_id, "timestamp": payload.timestamp}
-        elif student_id:
-            student = database.get_student_by_id(student_id)
+            result = {"status": "error", "message": "No face detected", "attendance_marked": False,
+                      "device_id": payload.device_id, "timestamp": payload.timestamp}
+
+        elif matched_id and matched_id.startswith("T_"):
+            # ── Teacher face matched ──────────────────────────────────────────
+            teacher_id = matched_id[2:]  # Strip the T_ prefix
+            conn = database.create_connection()
+            result = {"status": "fail", "message": "Teacher not found", "attendance_marked": False}
+            if conn:
+                try:
+                    import datetime
+                    cursor = conn.cursor(dictionary=True)
+                    cursor.execute(
+                        "SELECT id, first_name, last_name, photo_url FROM teachers WHERE id = %s AND school_id = %s",
+                        (teacher_id, school_id)
+                    )
+                    teacher = cursor.fetchone()
+                    if teacher:
+                        today = datetime.date.today()
+                        cursor.execute(
+                            "SELECT id FROM staff_attendance_logs WHERE teacher_id = %s AND date = %s AND school_id = %s",
+                            (teacher_id, today, school_id)
+                        )
+                        already = cursor.fetchone()
+                        if already:
+                            result = {
+                                "status": "already_marked",
+                                "student_name": f"{teacher['first_name']} {teacher['last_name']}",
+                                "student_id": teacher_id,
+                                "message": "Staff attendance already marked today",
+                                "attendance_marked": False,
+                                "photo_url": teacher.get('photo_url'),
+                                "is_teacher": True
+                            }
+                        else:
+                            now = datetime.datetime.now().time()
+                            cursor.execute(
+                                """INSERT INTO staff_attendance_logs 
+                                   (teacher_id, date, check_in_time, status, school_id)
+                                   VALUES (%s, %s, %s, 'present', %s)""",
+                                (teacher_id, today, now, school_id)
+                            )
+                            conn.commit()
+                            result = {
+                                "status": "success",
+                                "student_name": f"{teacher['first_name']} {teacher['last_name']}",
+                                "student_id": teacher_id,
+                                "message": "Staff attendance marked successfully ✓",
+                                "attendance_marked": True,
+                                "photo_url": teacher.get('photo_url'),
+                                "is_teacher": True
+                            }
+                except Exception as e:
+                    result = {"status": "fail", "message": str(e), "attendance_marked": False}
+                finally:
+                    cursor.close()
+                    conn.close()
+
+        elif matched_id:
+            # ── Student face matched ──────────────────────────────────────────
+            student = database.get_student_by_id(matched_id)
             if student:
-                already_marked = database.check_attendance_status(student_id, school_id=school_id)
+                already_marked = database.check_attendance_status(matched_id, school_id=school_id)
                 if already_marked:
-                    result = {"status": "already_marked", "student_name": student['name'], "student_id": student_id, "message": "Attendance already marked", "attendance_marked": False, "photo_url": student.get('photo_url')}
+                    result = {"status": "already_marked", "student_name": student['name'],
+                              "student_id": matched_id, "message": "Attendance already marked",
+                              "attendance_marked": False, "photo_url": student.get('photo_url')}
                 else:
-                    background_tasks.add_task(database.mark_attendance, student_id, school_id)
-                    result = {"status": "success", "student_name": student['name'], "student_id": student_id, "message": "Attendance marked successfully", "attendance_marked": True}
+                    background_tasks.add_task(database.mark_attendance, matched_id, school_id)
+                    result = {"status": "success", "student_name": student['name'],
+                              "student_id": matched_id, "message": "Attendance marked successfully",
+                              "attendance_marked": True}
             else:
                 result = {"status": "fail", "message": "Student not found", "attendance_marked": False}
         else:
