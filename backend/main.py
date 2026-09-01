@@ -12,8 +12,8 @@ import database
 import auth
 import face_engine  # ← Optimized engine: FAISS + Redis + adaptive thresholds
 from dataclasses import asdict
-from routers import exams, teachers, fees, whatsapp, students, settings, schedule, auth as auth_router
-from routers import monitoring
+from routers import exams, teachers, fees, students, settings, schedule, whatsapp, auth as auth_router
+from routers import monitoring, webhook
 from models import UserCreate, UserLogin, GoogleLogin, Token, StudentCreate, ScanRequest
 import migrate
 import face_state
@@ -27,13 +27,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(students.router)
 app.include_router(fees.router)
-app.include_router(whatsapp.router)
 app.include_router(auth_router.router)
 app.include_router(monitoring.router)
 app.include_router(settings.router)
+app.include_router(whatsapp.router)
 app.include_router(schedule.router)
 app.include_router(teachers.router)
 app.include_router(exams.router)
+app.include_router(webhook.router, prefix="/webhook", tags=["Webhook"])
 
 # Pull origins from environment variable or fallback to production/localhost defaults
 default_origins = "https://visio.school,https://www.visio.school,http://localhost:3000,http://127.0.0.1:3000"
@@ -122,6 +123,10 @@ async def startup_event():
     load_known_faces()
     database.init_db()
     migrate.migrate_db()
+    
+    # Start WAHA cron scheduler
+    from cron.fee_reminder import start_scheduler
+    start_scheduler()
 
 @app.get("/")
 def read_root():

@@ -12,7 +12,7 @@ import {
   RiFileList3Line,
   RiShieldCheckLine
 } from 'react-icons/ri';
-import { BackButton as UIBackButton } from '@/components/ui';
+import { BackButton as UIBackButton, Dropdown } from "@/components/ui";
 import { toast } from 'react-hot-toast';
 import { useStudents, Student } from '@/hooks/useStudents';
 import { generateInstitutionalID } from '@/utils/institutional';
@@ -148,37 +148,54 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
 
   return (
     <SC.Container>
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
-        accept="image/*" 
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        accept="image/*"
         onChange={handleFileChange}
       />
 
       <SC.Header>
-        <div style={{ display: 'flex',width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <SC.Title>{isEditMode ? 'Edit' : 'Onboard'} Student</SC.Title>
-          <UIBackButton onClick={onClear}>
-            Back to List
-          </UIBackButton>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <SC.Title>{isEditMode ? "Edit" : "Onboard"} Student</SC.Title>
+          <UIBackButton onClick={onClear}>Back to List</UIBackButton>
         </div>
       </SC.Header>
 
       <SC.StepperContainer>
         <SC.Step $active={currentStep === 1} $completed={currentStep > 1}>
-          <SC.StepNumber $active={currentStep === 1} $completed={currentStep > 1}>
+          <SC.StepNumber
+            $active={currentStep === 1}
+            $completed={currentStep > 1}
+          >
             {currentStep > 1 ? <RiCheckLine /> : 1}
           </SC.StepNumber>
           <SC.StepText>
             <SC.StepLabel>Basic Info</SC.StepLabel>
           </SC.StepText>
         </SC.Step>
-        
-        <div style={{ borderBottom: '2px solid #F1F5F9', flex: 1, margin: '0 24px' }} />
+
+        <div
+          style={{
+            borderBottom: "2px solid #F1F5F9",
+            flex: 1,
+            margin: "0 24px",
+          }}
+        />
 
         <SC.Step $active={currentStep === 2} $completed={currentStep > 2}>
-          <SC.StepNumber $active={currentStep === 2} $completed={currentStep > 2}>
+          <SC.StepNumber
+            $active={currentStep === 2}
+            $completed={currentStep > 2}
+          >
             {currentStep > 2 ? <RiCheckLine /> : 2}
           </SC.StepNumber>
           <SC.StepText>
@@ -186,7 +203,13 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
           </SC.StepText>
         </SC.Step>
 
-        <div style={{ borderBottom: '2px solid #F1F5F9', flex: 1, margin: '0 24px' }} />
+        <div
+          style={{
+            borderBottom: "2px solid #F1F5F9",
+            flex: 1,
+            margin: "0 24px",
+          }}
+        />
 
         <SC.Step $active={currentStep === 3}>
           <SC.StepNumber $active={currentStep === 3}>3</SC.StepNumber>
@@ -209,7 +232,14 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 <SC.PhotoUploadWrapper>
                   <SC.PhotoUpload onClick={handlePhotoClick}>
                     {photoPreview ? (
-                      <img src={photoPreview.startsWith('/') ? `http://127.0.0.1:8000${photoPreview}` : photoPreview} alt="Preview" />
+                      <img
+                        src={
+                          photoPreview.startsWith("/")
+                            ? `http://127.0.0.1:8000${photoPreview}`
+                            : photoPreview
+                        }
+                        alt="Preview"
+                      />
                     ) : (
                       <>
                         <RiCameraLine size={32} color="#94A3B8" />
@@ -222,175 +252,267 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 <SC.RightFields>
                   <SC.InputGroup>
                     <SC.Label>First Name</SC.Label>
-                    <SC.Input 
-                      placeholder="e.g. Alexander" 
+                    <SC.Input
+                      placeholder="e.g. Alexander"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, firstName: e.target.value })
+                      }
                     />
                   </SC.InputGroup>
                   <SC.InputGroup>
                     <SC.Label>Last Name</SC.Label>
-                    <SC.Input 
-                      placeholder="e.g. Hamilton" 
+                    <SC.Input
+                      placeholder="e.g. Hamilton"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastName: e.target.value })
+                      }
                     />
                   </SC.InputGroup>
                   <SC.InputGroup>
                     <SC.Label>Gender</SC.Label>
-                    <SC.Select 
+                    <Dropdown
                       value={formData.gender}
-                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </SC.Select>
+                      onChange={(val) =>
+                        setFormData({ ...formData, gender: val })
+                      }
+                      options={[
+                        { value: "male", label: "Male" },
+                        { value: "female", label: "Female" },
+                        { value: "other", label: "Other" },
+                      ]}
+                    />
                   </SC.InputGroup>
                   <SC.InputGroup>
                     <SC.Label>Section</SC.Label>
-                    <SC.Select 
+                    <Dropdown
                       value={formData.section}
-                      onChange={(e) => setFormData({...formData, section: e.target.value})}
-                    >
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="C">C</option>
-                    </SC.Select>
+                      onChange={(val) =>
+                        setFormData({ ...formData, section: val })
+                      }
+                      options={["A", "B", "C"]}
+                    />
                   </SC.InputGroup>
                 </SC.RightFields>
               </SC.TopSection>
 
-            <SC.InputsGrid>
-
-
-              <SC.InputGroup>
-                <SC.Label>Academic Grade</SC.Label>
-                <SC.Select 
-                  value={selectedGrade}
-                  onChange={(e) => setSelectedGrade(e.target.value)}
-                >
-                  {GRADES.map(grade => (
-                    <option key={grade} value={grade}>{grade}</option>
-                  ))}
-                </SC.Select>
-              </SC.InputGroup>
-               <SC.InputGroup>
-                <SC.Label>Date of Birth</SC.Label>
-                <SC.Input 
-                  type="date" 
-                  value={formData.dob}
-                  onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                />
-              </SC.InputGroup>
-
-              <SC.InputGroup>
-                <SC.Label>Date of Admission</SC.Label>
-                <SC.Input 
-                  type="date" 
-                  value={formData.admissionDate}
-                  onChange={(e) => setFormData({...formData, admissionDate: e.target.value})}
-                />
-              </SC.InputGroup>
-
-              <SC.InputGroup>
-                <SC.Label>Student Type</SC.Label>
-                <SC.Select 
-                  value={formData.studentType}
-                  onChange={(e) => setFormData({...formData, studentType: e.target.value})}
-                >
-                  <option value="Regular">Regular</option>
-                  <option value="Hosteler">Hosteler</option>
-                  {/* <option value="Fee">Fee</option> */}
-                </SC.Select>
-              </SC.InputGroup>
-
-              {formData.studentType === 'Regular' && (
+              <SC.InputsGrid>
                 <SC.InputGroup>
-                  <SC.Label>Transport Mode</SC.Label>
-                  <SC.Select 
-                    value={formData.transportType}
-                    onChange={(e) => setFormData({...formData, transportType: e.target.value})}
+                  <SC.Label>Academic Grade</SC.Label>
+                  <Dropdown
+                    value={selectedGrade}
+                    onChange={setSelectedGrade}
+                    options={GRADES}
+                  />
+                </SC.InputGroup>
+                <SC.InputGroup>
+                  <SC.Label>Date of Birth</SC.Label>
+                  <SC.Input
+                    type="date"
+                    value={formData.dob}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dob: e.target.value })
+                    }
+                  />
+                </SC.InputGroup>
+
+                <SC.InputGroup>
+                  <SC.Label>Date of Admission</SC.Label>
+                  <SC.Input
+                    type="date"
+                    value={formData.admissionDate}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        admissionDate: e.target.value,
+                      })
+                    }
+                  />
+                </SC.InputGroup>
+
+                <SC.InputGroup>
+                  <SC.Label>Student Type</SC.Label>
+                  <Dropdown
+                    value={formData.studentType}
+                    onChange={(val) =>
+                      setFormData({ ...formData, studentType: val })
+                    }
+                    options={["Regular", "Hosteler"]}
+                  />
+                </SC.InputGroup>
+
+                {formData.studentType === "Regular" && (
+                  <SC.InputGroup>
+                    <SC.Label>Transport Mode</SC.Label>
+                    <Dropdown
+                      value={formData.transportType}
+                      onChange={(val) =>
+                        setFormData({ ...formData, transportType: val })
+                      }
+                      options={[
+                        { value: "Self", label: "Self (Private)" },
+                        { value: "Van", label: "School Van" },
+                      ]}
+                    />
+                  </SC.InputGroup>
+                )}
+
+                <SC.InputGroup>
+                  <SC.Label>Monthly Tuition Fee</SC.Label>
+                  <SC.Input
+                    type="number"
+                    value={formData.tuitionFee}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tuitionFee: e.target.value })
+                    }
+                  />
+                </SC.InputGroup>
+
+                {formData.studentType === "Regular" &&
+                  formData.transportType === "Van" && (
+                    <SC.InputGroup>
+                      <SC.Label>Monthly Van Fee</SC.Label>
+                      <SC.Input
+                        type="number"
+                        value={formData.transportFee}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            transportFee: e.target.value,
+                          })
+                        }
+                      />
+                    </SC.InputGroup>
+                  )}
+
+                {formData.studentType === "Hosteler" && (
+                  <SC.InputGroup>
+                    <SC.Label>Monthly Hostel Fee</SC.Label>
+                    <SC.Input
+                      type="number"
+                      value={formData.hostelFee}
+                      onChange={(e) =>
+                        setFormData({ ...formData, hostelFee: e.target.value })
+                      }
+                    />
+                  </SC.InputGroup>
+                )}
+
+                <SC.InputGroup style={{ gridColumn: "span 3" }}>
+                  <div style={{ borderTop: "1px dashed #E2E8F0" }} />
+                  <h4
+                    style={{
+                      fontSize: "0.875rem",
+                      fontWeight: 800,
+                      color: "#1E293B",
+                      marginBottom: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
                   >
-                    <option value="Self">Self (Private)</option>
-                    <option value="Van">School Van</option>
-                  </SC.Select>
+                    <RiFileList3Line size={18} color="#4F46E5" />
+                    Historical Billing Setup
+                  </h4>
                 </SC.InputGroup>
-              )}
 
-              <SC.InputGroup>
-                <SC.Label>Monthly Tuition Fee</SC.Label>
-                <SC.Input 
-                  type="number"
-                  value={formData.tuitionFee}
-                  onChange={(e) => setFormData({...formData, tuitionFee: e.target.value})}
-                />
-              </SC.InputGroup>
-
-              {formData.studentType === 'Regular' && formData.transportType === 'Van' && (
                 <SC.InputGroup>
-                  <SC.Label>Monthly Van Fee</SC.Label>
-                  <SC.Input 
-                    type="number"
-                    value={formData.transportFee}
-                    onChange={(e) => setFormData({...formData, transportFee: e.target.value})}
+                  <SC.Label>Last Paid Month (Anchor)</SC.Label>
+                  <SC.Input
+                    type="date"
+                    value={formData.lastPaymentDate}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lastPaymentDate: e.target.value,
+                      })
+                    }
                   />
+                  <span
+                    style={{
+                      fontSize: "0.6875rem",
+                      color: "#94A3B8",
+                      marginTop: "4px",
+                    }}
+                  >
+                    System will bill starting from the month after this date.
+                  </span>
                 </SC.InputGroup>
-              )}
 
-              {formData.studentType === 'Hosteler' && (
                 <SC.InputGroup>
-                  <SC.Label>Monthly Hostel Fee</SC.Label>
-                  <SC.Input 
+                  <SC.Label>Initial Outstanding (Carry Forward)</SC.Label>
+                  <SC.Input
                     type="number"
-                    value={formData.hostelFee}
-                    onChange={(e) => setFormData({...formData, hostelFee: e.target.value})}
+                    placeholder="e.g. 500"
+                    value={formData.openingBalance}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        openingBalance: e.target.value,
+                      })
+                    }
                   />
+                  <span
+                    style={{
+                      fontSize: "0.6875rem",
+                      color: "#94A3B8",
+                      marginTop: "4px",
+                    }}
+                  >
+                    One-time balance added to the total due.
+                  </span>
                 </SC.InputGroup>
-              )}
 
-              <SC.InputGroup style={{ gridColumn: 'span 3' }}>
-                <div style={{ borderTop: '1px dashed #E2E8F0', margin: '20px 0 10px 0' }} />
-                <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1E293B', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <RiFileList3Line size={18} color="#4F46E5" />
-                  Historical Billing Setup
-                </h4>
-              </SC.InputGroup>
-
-              <SC.InputGroup>
-                <SC.Label>Last Paid Month (Anchor)</SC.Label>
-                <SC.Input 
-                  type="date"
-                  value={formData.lastPaymentDate}
-                  onChange={(e) => setFormData({...formData, lastPaymentDate: e.target.value})}
-                />
-                <span style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '4px' }}>System will bill starting from the month after this date.</span>
-              </SC.InputGroup>
-
-              <SC.InputGroup>
-                <SC.Label>Initial Outstanding (Carry Forward)</SC.Label>
-                <SC.Input 
-                  type="number"
-                  placeholder="e.g. 500"
-                  value={formData.openingBalance}
-                  onChange={(e) => setFormData({...formData, openingBalance: e.target.value})}
-                />
-                <span style={{ fontSize: '0.6875rem', color: '#94A3B8', marginTop: '4px' }}>One-time balance added to the total due.</span>
-              </SC.InputGroup>
-
-               <SC.InputGroup style={{ gridColumn: 'span 3' }}>
-                <div style={{ background: '#F0F9FF', padding: '16px 24px', borderRadius: '16px', border: '1px solid #BAE6FD', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ color: '#0369A1', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Consolidated Billing</span>
-                    <span style={{ color: '#0369A1', fontSize: '0.875rem', fontWeight: 600 }}>Calculated Monthly Fee</span>
+                <SC.InputGroup style={{ gridColumn: "span 3" }}>
+                  <div
+                    style={{
+                      background: "#F0F9FF",
+                      padding: "16px 24px",
+                      borderRadius: "16px",
+                      border: "1px solid #BAE6FD",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <span
+                        style={{
+                          color: "#0369A1",
+                          fontSize: "0.75rem",
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Consolidated Billing
+                      </span>
+                      <span
+                        style={{
+                          color: "#0369A1",
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Calculated Monthly Fee
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        color: "#0369A1",
+                        fontWeight: 900,
+                        fontSize: "1.75rem",
+                      }}
+                    >
+                      ₹{totalFee.toLocaleString()}
+                    </span>
                   </div>
-                  <span style={{ color: '#0369A1', fontWeight: 900, fontSize: '1.75rem' }}>₹{totalFee.toLocaleString()}</span>
-                </div>
-              </SC.InputGroup>
-            </SC.InputsGrid>
-          </SC.FormGrid>
-        </>
-      )}
+                </SC.InputGroup>
+              </SC.InputsGrid>
+            </SC.FormGrid>
+          </>
+        )}
 
         {currentStep === 2 && (
           <>
@@ -401,45 +523,59 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
             <SC.InputsGrid>
               <SC.InputGroup>
                 <SC.Label>Guardian Full Name</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. James Hamilton" 
+                <SC.Input
+                  placeholder="e.g. James Hamilton"
                   value={formData.guardianName}
-                  onChange={(e) => setFormData({...formData, guardianName: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, guardianName: e.target.value })
+                  }
                 />
               </SC.InputGroup>
               <SC.InputGroup>
                 <SC.Label>Relationship</SC.Label>
-                <SC.Select
+                <Dropdown
                   value={formData.relation}
-                  onChange={(e) => setFormData({...formData, relation: e.target.value})}
-                >
-                  <option value="Father">Father</option>
-                  <option value="Mother">Mother</option>
-                  <option value="Guardian">Legal Guardian</option>
-                </SC.Select>
+                  onChange={(val) =>
+                    setFormData({ ...formData, relation: val })
+                  }
+                  options={[
+                    { value: "Father", label: "Father" },
+                    { value: "Mother", label: "Mother" },
+                    { value: "Guardian", label: "Legal Guardian" },
+                  ]}
+                />
               </SC.InputGroup>
               <SC.InputGroup>
                 <SC.Label>Emergency Contact Number</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. +1 234 567 8900" 
+                <SC.Input
+                  placeholder="e.g. +1 234 567 8900"
                   value={formData.guardianPhone}
-                  onChange={(e) => setFormData({...formData, guardianPhone: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, guardianPhone: e.target.value })
+                  }
                 />
               </SC.InputGroup>
               <SC.InputGroup>
                 <SC.Label>WhatsApp Notification Number (Parent)</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. 1234567890" 
+                <SC.Input
+                  placeholder="e.g. 1234567890"
                   value={formData.parent_phone}
-                  onChange={(e) => setFormData({...formData, parent_phone: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({ ...formData, parent_phone: e.target.value })
+                  }
                 />
               </SC.InputGroup>
-              <SC.InputGroup style={{ gridColumn: 'span 2' }}>
+              <SC.InputGroup style={{ gridColumn: "span 2" }}>
                 <SC.Label>Full Residential Address</SC.Label>
-                <SC.Input 
-                  placeholder="e.g. 123 Academic Street, Education City" 
+                <SC.Input
+                  placeholder="e.g. 123 Academic Street, Education City"
                   value={formData.guardianAddress}
-                  onChange={(e) => setFormData({...formData, guardianAddress: e.target.value})}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      guardianAddress: e.target.value,
+                    })
+                  }
                 />
               </SC.InputGroup>
             </SC.InputsGrid>
@@ -455,11 +591,15 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
             <SC.ReviewGrid>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Student Name</SC.ReviewLabel>
-                <SC.ReviewValue>{formData.firstName} {formData.lastName}</SC.ReviewValue>
+                <SC.ReviewValue>
+                  {formData.firstName} {formData.lastName}
+                </SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Grade & Section</SC.ReviewLabel>
-                <SC.ReviewValue>{selectedGrade} - {formData.section}</SC.ReviewValue>
+                <SC.ReviewValue>
+                  {selectedGrade} - {formData.section}
+                </SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Student Type</SC.ReviewLabel>
@@ -469,45 +609,66 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                 <SC.ReviewLabel>Date of Birth</SC.ReviewLabel>
                 <SC.ReviewValue>{formData.dob}</SC.ReviewValue>
               </SC.ReviewItem>
-               <SC.ReviewItem>
+              <SC.ReviewItem>
                 <SC.ReviewLabel>System ID</SC.ReviewLabel>
                 <SC.ReviewValue>{formData.id}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Guardian</SC.ReviewLabel>
-                <SC.ReviewValue>{formData.guardianName} ({formData.relation})</SC.ReviewValue>
+                <SC.ReviewValue>
+                  {formData.guardianName} ({formData.relation})
+                </SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Contact</SC.ReviewLabel>
                 <SC.ReviewValue>{formData.guardianPhone}</SC.ReviewValue>
               </SC.ReviewItem>
-              <SC.ReviewItem style={{ gridColumn: 'span 2' }}>
+              <SC.ReviewItem style={{ gridColumn: "span 2" }}>
                 <SC.ReviewLabel>Address</SC.ReviewLabel>
                 <SC.ReviewValue>{formData.guardianAddress}</SC.ReviewValue>
               </SC.ReviewItem>
               <SC.ReviewItem>
                 <SC.ReviewLabel>Total Monthly Fee</SC.ReviewLabel>
-                <SC.ReviewValue style={{ color: '#4F46E5', fontWeight: 900, fontSize: '1.25rem' }}>₹{totalFee.toLocaleString()}</SC.ReviewValue>
+                <SC.ReviewValue
+                  style={{
+                    color: "#4F46E5",
+                    fontWeight: 900,
+                    fontSize: "1.25rem",
+                  }}
+                >
+                  ₹{totalFee.toLocaleString()}
+                </SC.ReviewValue>
               </SC.ReviewItem>
             </SC.ReviewGrid>
 
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '12px', 
-              padding: '16px', 
-              background: '#F0FDF4', 
-              borderRadius: '12px',
-              border: '1px solid #BBF7D0',
-              color: '#166534',
-              marginTop: '12px'
-            }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "16px",
+                background: "#F0FDF4",
+                borderRadius: "12px",
+                border: "1px solid #BBF7D0",
+                color: "#166534",
+                marginTop: "12px",
+              }}
+            >
               <RiShieldCheckLine size={20} />
-              <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Biometric and academic records verified.</span>
+              <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                Biometric and academic records verified.
+              </span>
             </div>
           </SC.ReviewSection>
         )}
-        <SC.ActionFooter style={{ marginTop: 'auto', border: 'none', padding: '16px 0 0', background: 'transparent' }}>
+        <SC.ActionFooter
+          style={{
+            marginTop: "auto",
+            border: "none",
+            padding: "16px 0 0",
+            background: "transparent",
+          }}
+        >
           <div style={{ flex: 1 }}>
             {currentStep > 1 && (
               <SC.BackButton onClick={handleBack}>
@@ -517,7 +678,13 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
             )}
           </div>
           <SC.NextButton onClick={handleNext} disabled={isSubmitting}>
-            {isSubmitting ? 'Synchronizing...' : currentStep === 3 ? (isEditMode ? 'Update Record' : 'Confirm Enrollment') : 'Guardian Details'}
+            {isSubmitting
+              ? "Synchronizing..."
+              : currentStep === 3
+                ? isEditMode
+                  ? "Update Record"
+                  : "Confirm Enrollment"
+                : "Guardian Details"}
             <RiArrowRightLine size={20} />
           </SC.NextButton>
         </SC.ActionFooter>

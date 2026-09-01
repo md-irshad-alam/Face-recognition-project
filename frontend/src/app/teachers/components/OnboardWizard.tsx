@@ -14,6 +14,7 @@ import {
   PrimaryBtn, GhostBtn, ModalBody, ModalFooter,
 } from '../teachers.sc'
 import { useAuth } from '@/context/AuthContext'
+import { Dropdown } from '@/components/ui'
 
 const DEPARTMENTS = [
   'Mathematics', 'Physics', 'Chemistry', 'Biology',
@@ -165,11 +166,11 @@ export default function OnboardWizard({ onSubmit, loading }: Props) {
                 </FieldGroup>
                 <FieldGroup>
                   <FieldLabel>Role</FieldLabel>
-                  <FieldSelect value={form.role} onChange={e => set('role', e.target.value)}>
-                    {ROLE_OPTIONS.map(r => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </FieldSelect>
+                  <Dropdown 
+                    value={form.role} 
+                    onChange={val => set('role', val)} 
+                    options={ROLE_OPTIONS}
+                  />
                 </FieldGroup>
               </FieldRow>
 
@@ -218,10 +219,14 @@ export default function OnboardWizard({ onSubmit, loading }: Props) {
               <FieldRow>
                 <FieldGroup>
                   <FieldLabel>Department *</FieldLabel>
-                  <FieldSelect value={form.department} onChange={e => set('department', e.target.value)}>
-                    <option value="">Select Department</option>
-                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </FieldSelect>
+                  <Dropdown 
+                    value={form.department} 
+                    onChange={val => set('department', val)} 
+                    options={[
+                      { value: '', label: 'Select Department' },
+                      ...DEPARTMENTS.map(d => ({ value: d, label: d }))
+                    ]}
+                  />
                 </FieldGroup>
                 <FieldGroup>
                   <FieldLabel>Specialization *</FieldLabel>

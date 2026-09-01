@@ -12,6 +12,7 @@ import Modal from '@/components/ui/Modal';
 import * as SC from './fees.sc';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Dropdown } from '@/components/ui';
 
 // ── PDF Generator ─────────────────────────────────────────────────────────────
 const downloadPDF = async (inv: any) => {
@@ -391,20 +392,34 @@ export default function FeesPage() {
       {activeTab === 'invoices' && (
         <>
           <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
-            <SC.Select value={filterMonth} onChange={e=>setFilterMonth(+e.target.value)} style={{ flex: '1 1 100px' }}>
-              {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
-            </SC.Select>
-            <SC.Select value={filterYear} onChange={e=>setFilterYear(+e.target.value)} style={{ flex: '1 1 100px' }}>
-              {years.map(y=><option key={y} value={y}>{y}</option>)}
-            </SC.Select>
-            <SC.Select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{ flex: '2 1 150px' }}>
-              <option value=''>All Status</option>
-              <option value='PAID'>Paid</option>
-              <option value='PARTIALLY_PAID'>Partially Paid</option>
-              <option value='UNPAID'>Unpaid</option>
-              <option value='OVERDUE'>Overdue</option>
-            </SC.Select>
-            <button onClick={fetchInvoices} style={{ flex: '1 1 auto', background:'#F1F5F9', border:'none', borderRadius:10, padding:'9px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontWeight:700, color:'#64748B' }}>
+            <div style={{ flex: '1 1 120px' }}>
+              <Dropdown 
+                value={filterMonth} 
+                onChange={(val) => setFilterMonth(Number(val))} 
+                options={MONTHS.map((m,i) => ({ value: i+1, label: m }))}
+              />
+            </div>
+            <div style={{ flex: '1 1 120px' }}>
+              <Dropdown 
+                value={filterYear} 
+                onChange={(val) => setFilterYear(Number(val))} 
+                options={years.map(y => ({ value: y, label: String(y) }))}
+              />
+            </div>
+            <div style={{ flex: '2 1 180px' }}>
+              <Dropdown 
+                value={filterStatus} 
+                onChange={setFilterStatus} 
+                options={[
+                  { value: '', label: 'All Status' },
+                  { value: 'PAID', label: 'Paid' },
+                  { value: 'PARTIALLY_PAID', label: 'Partially Paid' },
+                  { value: 'UNPAID', label: 'Unpaid' },
+                  { value: 'OVERDUE', label: 'Overdue' }
+                ]}
+              />
+            </div>
+            <button onClick={fetchInvoices} style={{ flex: '1 1 auto', background:'#F1F5F9', border:'none', borderRadius:10, padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontWeight:700, color:'#64748B' }}>
               <RiRefreshLine /> Refresh
             </button>
           </div>
@@ -508,11 +523,15 @@ export default function FeesPage() {
             </div>
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, color:'#64748B', marginBottom:6 }}>METHOD*</label>
-              <select value={payMethod} onChange={e=>setPayMethod(e.target.value)} style={{ width:'100%', height:48, borderRadius:12, border:'1.5px solid #E2E8F0', padding:'0 14px', background:'#F8FAFC' }}>
-                <option value="CASH">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-              </select>
+              <Dropdown 
+                value={payMethod} 
+                onChange={setPayMethod} 
+                options={[
+                  { value: 'CASH', label: 'Cash' },
+                  { value: 'UPI', label: 'UPI' },
+                  { value: 'BANK_TRANSFER', label: 'Bank Transfer' }
+                ]}
+              />
             </div>
             <button onClick={submitPayment} disabled={submitting} style={{ height:48, borderRadius:12, border:'none', background:'#4F46E5', color:'white', fontWeight:800, cursor:'pointer' }}>
               {submitting ? 'Processing...' : 'Confirm Payment'}

@@ -71,3 +71,6 @@ pyotp
 argon2-cffi
 email-validator
 dnspython
+httpx
+apscheduler
+google-generativeai

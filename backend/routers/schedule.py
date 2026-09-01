@@ -148,9 +148,12 @@ def get_schedule(current_user: dict = Depends(auth.get_current_user)):
             row['end_time'] = format_time(row['end_time'])
             if row.get('classes'):
                 if isinstance(row['classes'], str):
-                    try:
-                        row['classes'] = json.loads(row['classes'])
-                    except:
+                    if row.get('classes'):
+                        try:
+                            row['classes'] = json.loads(row['classes'])
+                        except json.JSONDecodeError:
+                            row['classes'] = []
+                    else:
                         row['classes'] = []
             else:
                 row['classes'] = []

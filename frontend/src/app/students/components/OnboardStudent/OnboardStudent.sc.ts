@@ -205,7 +205,7 @@ export const RightFields = styled.div`
   flex: 1;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 16px;
 
   @media (max-width: 768px) {
     display: contents;
@@ -223,7 +223,7 @@ export const PhotoLabel = styled.span`
 export const InputsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 16px;
 
   @media (max-width: 768px) {
     display: contents;
@@ -345,7 +345,7 @@ export const BackButton = styled.button`
 export const ReviewSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 `;
 
 export const ReviewGrid = styled.div`

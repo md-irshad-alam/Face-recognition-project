@@ -87,6 +87,7 @@ const LogoInner = styled.div<{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
   overflow: hidden;
   flex-shrink: 0;
 `
@@ -112,7 +113,7 @@ const LogoTitle = styled.h2<{ $collapsed: boolean }>`
   width: ${p => p.$collapsed ? 0 : 'auto'};
   transition: opacity 0.2s, width 0.2s;
   overflow: hidden;
-  font-family: 'Poppins', 'Inter', sans-serif;
+  font-family: inter;
 `
 
 const CloseBtn = styled.button`
@@ -317,7 +318,7 @@ export default function Sidebar({ open, onClose, collapsed, onCollapse }: Sideba
 
       <SidebarPanel $collapsed={collapsed} className={open ? 'is-open' : ''}>
         <LogoSection $collapsed={collapsed}>
-          <LogoInner $collapsed={collapsed}>
+          <LogoInner $collapsed={collapsed} onClick={() => window.location.href = "/"}>
             <LogoIcon>
               <img
                 src="/visio-logo.png"

@@ -82,17 +82,17 @@ def run_substitution_engine():
     # Check if today is a week off
     cursor.execute("SELECT week_off_days FROM school_settings WHERE school_id = %s", (SCHOOL_ID,))
     settings_row = cursor.fetchone()
+    week_offs = ["Sunday"]
     if settings_row and settings_row.get("week_off_days"):
-        import json
         try:
             week_offs = json.loads(settings_row["week_off_days"])
-            if day_name in week_offs:
-                logger.info(f"✅ Today ({day_name}) is a Week Off. Skipping substitution engine.")
-                cursor.close()
-                conn.close()
-                return
-        except Exception as e:
-            logger.warning(f"Failed to parse week_off_days: {e}")
+        except json.JSONDecodeError:
+            pass
+        if day_name in week_offs:
+            logger.info(f"✅ Today ({day_name}) is a Week Off. Skipping substitution engine.")
+            cursor.close()
+            conn.close()
+            return
 
     # Check if today is a holiday
     cursor.execute("""
@@ -205,10 +205,11 @@ def run_substitution_engine():
             # Parse classes JSON field for display
             import json as _json
             classes_raw = period_row.get("classes")
-            if isinstance(classes_raw, str):
+            class_list = []
+            if classes_raw:
                 try:
                     class_list = _json.loads(classes_raw)
-                except Exception:
+                except (json.JSONDecodeError, TypeError):
                     class_list = [classes_raw]
             elif isinstance(classes_raw, list):
                 class_list = classes_raw

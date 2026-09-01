@@ -16,6 +16,7 @@ import * as SC from './leaves.sc';
 import { toast } from 'react-hot-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
+import { Dropdown } from '@/components/ui';
 
 export default function LeaveManagementPage() {
   const queryClient = useQueryClient();
@@ -197,12 +198,16 @@ export default function LeaveManagementPage() {
             <form onSubmit={handleSubmit}>
               <SC.FormGroup>
                 <label>Leave Category</label>
-                <SC.Select value={leaveType} onChange={e => setLeaveType(e.target.value)}>
-                  <option value="">Select type...</option>
-                  <option value="sick">Sick Leave</option>
-                  <option value="casual">Casual Leave</option>
-                  <option value="earned">Earned Leave</option>
-                </SC.Select>
+                <Dropdown
+                  value={leaveType}
+                  onChange={setLeaveType}
+                  options={[
+                    { value: '', label: 'Select type...' },
+                    { value: 'sick', label: 'Sick Leave' },
+                    { value: 'casual', label: 'Casual Leave' },
+                    { value: 'earned', label: 'Earned Leave' }
+                  ]}
+                />
               </SC.FormGroup>
 
               <SC.DateRow>

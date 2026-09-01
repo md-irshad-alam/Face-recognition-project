@@ -14,7 +14,7 @@ import {
   RiCalendarEventLine,
   RiTimeLine
 } from 'react-icons/ri';
-import { BackButton as UIBackButton } from '@/components/ui';
+import { BackButton as UIBackButton, Dropdown } from '@/components/ui';
 import { useTeachers, Teacher } from '@/hooks/useTeachers';
 import { toast } from 'react-hot-toast';
 import { generateInstitutionalID } from '@/utils/institutional';
@@ -254,14 +254,11 @@ export default function OnboardTeacher({ onClear, initialData }: OnboardTeacherP
             <SC.FieldGrid>
               <SC.FormGroup>
                 <SC.Label>Highest Qualification</SC.Label>
-                <SC.Select 
+                <Dropdown 
                   value={formData.qualification}
-                  onChange={e => setFormData({...formData, qualification: e.target.value})}
-                >
-                  <option>PhD in Education</option>
-                  <option>Master of Science</option>
-                  <option>Bachelor of Education</option>
-                </SC.Select>
+                  onChange={(val) => setFormData({...formData, qualification: val})}
+                  options={['PhD in Education', 'Master of Science', 'Bachelor of Education']}
+                />
               </SC.FormGroup>
               <SC.FormGroup>
                 <SC.Label>Years of Experience</SC.Label>
@@ -276,26 +273,23 @@ export default function OnboardTeacher({ onClear, initialData }: OnboardTeacherP
             <SC.FieldGrid>
               <SC.FormGroup>
                 <SC.Label>Department / Specialization</SC.Label>
-                <SC.Select 
+                <Dropdown 
                   value={formData.department}
-                  onChange={e => setFormData({...formData, department: e.target.value})}
-                >
-                  <option>Mathematics & Logic</option>
-                  <option>Computer Science</option>
-                  <option>English Literature</option>
-                  <option>Academic Research</option>
-                </SC.Select>
+                  onChange={(val) => setFormData({...formData, department: val})}
+                  options={['Mathematics & Logic', 'Computer Science', 'English Literature', 'Academic Research']}
+                />
               </SC.FormGroup>
               <SC.FormGroup>
                 <SC.Label>Staff Role</SC.Label>
-                <SC.Select 
+                <Dropdown 
                   value={formData.role}
-                  onChange={e => setFormData({...formData, role: e.target.value})}
-                >
-                  <option value="teacher">Class Teacher</option>
-                  <option value="hod">Head of Department (HOD)</option>
-                  <option value="lecturer">Lecturer</option>
-                </SC.Select>
+                  onChange={(val) => setFormData({...formData, role: val})}
+                  options={[
+                    { value: 'teacher', label: 'Class Teacher' },
+                    { value: 'hod', label: 'Head of Department (HOD)' },
+                    { value: 'lecturer', label: 'Lecturer' }
+                  ]}
+                />
               </SC.FormGroup>
             </SC.FieldGrid>
           </SC.Section>

@@ -38,14 +38,13 @@ def run_daily_attendance_sweep():
             # Check week off
             cursor.execute("SELECT week_off_days FROM school_settings WHERE school_id = %s", (sid,))
             settings = cursor.fetchone()
-            if settings and settings.get('week_off_days'):
-                import json
+            if settings and 'week_off_days' in settings and settings['week_off_days']:
                 try:
                     week_offs = json.loads(settings['week_off_days'])
-                    if day_name in week_offs:
-                        is_off = True
-                except:
-                    pass
+                except json.JSONDecodeError:
+                    week_offs = ["Sunday"]
+                if day_name in week_offs:
+                    is_off = True
             
             # Check holiday
             if not is_off:

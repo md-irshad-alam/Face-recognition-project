@@ -16,22 +16,21 @@ celery_app = Celery("tasks", broker=CELERY_BROKER_URL)
 MSG91_AUTH_KEY = os.getenv("MSG91_AUTH_KEY")
 MSG91_SENDER_ID = os.getenv("MSG91_SENDER_ID", "SCHOOL")
 
-# WhatsApp WPPConnect Server Config
-WPP_SERVER_URL = os.getenv("WPP_SERVER_URL", "http://127.0.0.1:21465")
-WPP_SECRET_KEY = os.getenv("WPP_SECRET_KEY", "THISISMYSECURETOKEN")
-WPP_SESSION_NAME = os.getenv("WPP_SESSION_NAME", "smart_school")
+# WhatsApp WAHA Server Config
+WAHA_BASE_URL = os.getenv("WAHA_BASE_URL", "http://localhost:3001")
+WAHA_API_KEY = os.getenv("WAHA_API_KEY", "visio_waha_secure_key_123")
 
 @celery_app.task(name="send_whatsapp_message")
 def send_whatsapp_message(phone, message, session_name="default"):
     """
-    Sends a WhatsApp message using WPPConnect Server.
+    Sends a WhatsApp message using WAHA Server.
     """
     print(f"Sending WhatsApp to {phone} using session {session_name}: {message}")
     
-    url = f"{WPP_SERVER_URL}/api/{session_name}/send-message"
+    url = f"{WAHA_BASE_URL}/api/sendText"
     headers = {
-        "Authorization": f"Bearer {WPP_SECRET_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Api-Key": WAHA_API_KEY
     }
     
     # Clean phone number and ensure country code (default to 91 for India if 10 digits)
@@ -40,15 +39,16 @@ def send_whatsapp_message(phone, message, session_name="default"):
         clean_number = "91" + clean_number
     
     payload = {
-        "phone": clean_number,
-        "message": message
+        "session": session_name,
+        "chatId": f"{clean_number}@c.us",
+        "text": message
     }
     
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
         response.raise_for_status()
-        print(f"✅ WhatsApp message sent to {phone} via session {session_name}")
-        return response.json()
+        print(f"✅ WhatsApp message sent to {phone} via WAHA")
+        return response.json() if response.content else {"status": "success"}
     except Exception as e:
         print(f"❌ WhatsApp API Error: {e}")
         return {"status": "error", "message": str(e)}

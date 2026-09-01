@@ -19,6 +19,7 @@ const NavbarContainer = styled.header`
   border-bottom: 1px solid #E2E8F0;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 32px;
   position: sticky;
   top: 0;
@@ -39,6 +40,7 @@ const NavLogoWrap = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
   @media (max-width: 1024px) {
     margin-right: 8px;
   }
@@ -59,7 +61,7 @@ const NavLogoTitle = styled.h2`
   margin: 0;
   letter-spacing: -0.02em;
   white-space: nowrap;
-  font-family: 'Poppins', 'Inter', sans-serif;
+  font-family: inter;
   @media (max-width: 480px) { display: none; }
 `
 
@@ -351,22 +353,15 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           <RiMenuLine size={22} />
         </HamburgerBtn>
 
-        <NavLogoWrap>
-          <NavLogoIcon>
-            <img
-              src="/visio-logo.png"
-              alt="Visio Logo"
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-            />
-          </NavLogoIcon>
-          <NavLogoTitle>VISIO</NavLogoTitle>
+        <NavLogoWrap onClick={() => window.location.href = "/"}>
+          <NavLogoTitle>MANAGE YOUR SCHOOL WITH VISIO</NavLogoTitle>
         </NavLogoWrap>
       </div>
 
-      <SearchSection>
+      {/* <SearchSection>
         <SearchIconWrap><RiSearchLine size={16} /></SearchIconWrap>
         <SearchInput placeholder="Search students, teachers, records..." />
-      </SearchSection>
+      </SearchSection> */}
 
       <ActionsSection>
         {/* ── Bell icon ── */}

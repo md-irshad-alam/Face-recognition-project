@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { api } from '@/services/api';
 import toast from 'react-hot-toast';
 import { RiAddLine, RiCloseLine, RiSave3Line, RiEdit2Line, RiDeleteBin7Line } from 'react-icons/ri';
+import { Dropdown } from '@/components/ui';
 
 const Container = styled.div`
   padding: 24px;
@@ -474,22 +475,16 @@ export default function MasterScheduleView() {
                 <>
                   <FormGroup>
                     <Label>Day of Week</Label>
-                    <Select value={editFormData.day_of_week} onChange={e => setEditFormData({...editFormData, day_of_week: e.target.value})}>
-                      {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </Select>
+                    <Dropdown value={editFormData.day_of_week} onChange={val => setEditFormData({...editFormData, day_of_week: val})} options={DAYS} />
                   </FormGroup>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <FormGroup>
                       <Label>Grade</Label>
-                      <Select value={editFormData.grade} onChange={e => setEditFormData({...editFormData, grade: e.target.value})}>
-                        {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                      </Select>
+                      <Dropdown value={editFormData.grade} onChange={val => setEditFormData({...editFormData, grade: val})} options={GRADES} />
                     </FormGroup>
                     <FormGroup>
                       <Label>Section</Label>
-                      <Select value={editFormData.section} onChange={e => setEditFormData({...editFormData, section: e.target.value})}>
-                        {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                      </Select>
+                      <Dropdown value={editFormData.section} onChange={val => setEditFormData({...editFormData, section: val})} options={SECTIONS} />
                     </FormGroup>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -502,10 +497,7 @@ export default function MasterScheduleView() {
                   </div>
                   <FormGroup>
                     <Label>Assigned Teacher</Label>
-                    <Select value={editFormData.teacher_id} onChange={e => setEditFormData({...editFormData, teacher_id: e.target.value})}>
-                      <option value="">Select a teacher...</option>
-                      {teachers.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
-                    </Select>
+                    <Dropdown value={editFormData.teacher_id} onChange={val => setEditFormData({...editFormData, teacher_id: val})} options={[{value: '', label: 'Select a teacher...'}, ...teachers.map(t => ({value: t.id, label: `${t.first_name} ${t.last_name}`}))]} />
                   </FormGroup>
                 </>
               ) : (
@@ -515,16 +507,11 @@ export default function MasterScheduleView() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px' }}>
                     <FormGroup>
                       <Label>Teacher</Label>
-                      <Select value={bulkData.teacher_id} onChange={e => setBulkData({...bulkData, teacher_id: e.target.value})}>
-                        <option value="">Select a teacher...</option>
-                        {teachers.map(t => <option key={t.id} value={t.id}>{t.first_name} {t.last_name}</option>)}
-                      </Select>
+                      <Dropdown value={bulkData.teacher_id} onChange={val => setBulkData({...bulkData, teacher_id: val})} options={[{value: '', label: 'Select a teacher...'}, ...teachers.map(t => ({value: t.id, label: `${t.first_name} ${t.last_name}`}))]} />
                     </FormGroup>
                     <FormGroup>
                       <Label>Day of Week</Label>
-                      <Select value={bulkData.day_of_week} onChange={e => setBulkData({...bulkData, day_of_week: e.target.value})}>
-                        {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </Select>
+                      <Dropdown value={bulkData.day_of_week} onChange={val => setBulkData({...bulkData, day_of_week: val})} options={DAYS} />
                     </FormGroup>
                   </div>
                   
@@ -565,12 +552,12 @@ export default function MasterScheduleView() {
                           </td>
                           <td>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                              <Select style={{ padding: '6px', flex: 1 }} value={p.grade} onChange={e => updateBulkPeriod(p.id, 'grade', e.target.value)}>
-                                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                              </Select>
-                              <Select style={{ padding: '6px', width: '70px' }} value={p.section} onChange={e => updateBulkPeriod(p.id, 'section', e.target.value)}>
-                                {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                              </Select>
+                              <div style={{ flex: 1, minWidth: '90px' }}>
+                                <Dropdown value={p.grade} onChange={val => updateBulkPeriod(p.id, 'grade', val)} options={GRADES} />
+                              </div>
+                              <div style={{ width: '80px', flexShrink: 0 }}>
+                                <Dropdown value={p.section} onChange={val => updateBulkPeriod(p.id, 'section', val)} options={SECTIONS} />
+                              </div>
                             </div>
                           </td>
                           <td>
