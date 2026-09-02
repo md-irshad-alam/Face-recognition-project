@@ -36,14 +36,28 @@ app.include_router(teachers.router)
 app.include_router(exams.router)
 app.include_router(webhook.router, prefix="/webhook", tags=["Webhook"])
 
-# Pull origins from environment variable or fallback to production/localhost defaults
-default_origins = "https://visio.school,https://www.visio.school,http://localhost:3000,http://127.0.0.1:3000"
-allowed_origins_env = os.getenv("ALLOWED_ORIGINS", default_origins)
-origins = [origin.strip().rstrip("/") for origin in allowed_origins_env.split(",")]
+# Explicit default allowed origins for production & local development
+default_origins = [
+    "https://visio.school",
+    "https://www.visio.school",
+    "https://api.visio.school",
+    "http://visio.school",
+    "http://www.visio.school",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    parsed_origins = [origin.strip().rstrip("/") for origin in allowed_origins_env.split(",") if origin.strip() and origin.strip() != "*"]
+    origins = list(set(parsed_origins + default_origins))
+else:
+    origins = default_origins
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.visio\.school|http://localhost:.*|http://127\.0\.0\.1:.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

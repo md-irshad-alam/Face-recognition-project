@@ -50,8 +50,18 @@ async def waha_webhook(request: Request, background_tasks: BackgroundTasks):
         
         phone = sender_id.split("@")[0] if "@" in sender_id else sender_id
         
+        if not message_text:
+            message_text = payload.get("text", "")
+            
+        if not message_text and "message" in payload:
+            msg_obj = payload.get("message", {})
+            if "extendedTextMessage" in msg_obj:
+                message_text = msg_obj["extendedTextMessage"].get("text", "")
+            elif "conversation" in msg_obj:
+                message_text = msg_obj.get("conversation", "")
+
         if message_text and sender_id:
-            logger.info(f"Received WAHA message from {phone}")
+            logger.info(f"Received WAHA message from {phone} (Text: {message_text[:50]})")
             
             # Process via Gemini
             intent, reply_text = await process_parent_message(message_text)
@@ -61,5 +71,7 @@ async def waha_webhook(request: Request, background_tasks: BackgroundTasks):
             
             # Send reply
             await send_text_message(phone, reply_text)
+        else:
+            logger.info(f"Ignored WAHA event or empty message from {phone}. Payload: {payload}")
             
     return {"status": "ok"}

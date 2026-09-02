@@ -37,7 +37,7 @@ async def process_parent_message(message_text: str) -> tuple[str, str]:
         return "GENERAL_QUERY", "Thank you for reaching out. We will get back to you shortly."
         
     try:
-        response = model.generate_content(f"{SYSTEM_PROMPT}\n\nParent's Message: {message_text}")
+        response = await model.generate_content_async(f"{SYSTEM_PROMPT}\n\nParent's Message: {message_text}")
         content = response.text.strip()
         
         intent = "GENERAL_QUERY"
