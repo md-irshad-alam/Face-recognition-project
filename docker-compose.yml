@@ -69,18 +69,20 @@ services:
       dockerfile: Dockerfile
       args:
         # Use NEXT_PUBLIC_API_URL from .env during build
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000/ws/attendance}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.visio.school}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://api.visio.school/ws/attendance}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     container_name: visio-frontend
     restart: always
     ports:
       - "3000:3000"
     env_file:
-      - ./backend/.env
+      - ./frontend/.env
     environment:
-      # Inject exact URLs from the shared .env
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://localhost:8000/ws/attendance}
+      # Inject exact URLs from frontend/.env
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.visio.school}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://api.visio.school/ws/attendance}
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     depends_on:
       - backend
 
