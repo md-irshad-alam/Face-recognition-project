@@ -3,7 +3,7 @@
  * Handles base URL, auth tokens, and common response patterns.
  */
 
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school';
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL
 const BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
 interface RequestOptions extends RequestInit {

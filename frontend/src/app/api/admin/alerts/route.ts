@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     
     // 2. Fetch the predictive risk alerts from the FastAPI Backend
     // Using the internal API URL, fallback to localhost for development
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '');
     
     // NOTE: You will need to create the corresponding endpoint in your FastAPI backend
     // to query the 'risk_alerts' table. e.g. @app.get("/admin/alerts")
@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const { alertId, status } = body;
     
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '');
     const authHeader = request.headers.get('authorization');
 
     const res = await fetch(`${backendUrl}/admin/alerts/${alertId}/status`, {

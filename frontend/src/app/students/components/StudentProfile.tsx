@@ -105,7 +105,13 @@ const StudentProfile: React.FC<StudentProfileProps> = ({ studentId, onBack, onEd
             <SC.ProfileCard>
               <SC.AvatarBox>
                 <img 
-                  src={student.photo_url ? `http://127.0.0.1:8000${student.photo_url}` : 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + student.id} 
+                  src={
+                    student.photo_url 
+                      ? (student.photo_url.startsWith('http') 
+                          ? student.photo_url 
+                          : `${(process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '')}${student.photo_url.startsWith('/') ? '' : '/'}${student.photo_url}`) 
+                      : 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + student.id
+                  } 
                   alt={student.name} 
                 />
                 <div className="badge"><RiVerifiedBadgeFill /></div>

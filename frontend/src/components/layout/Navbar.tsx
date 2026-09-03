@@ -291,7 +291,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
 
   // Load APK info
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '');
     fetch(`${baseUrl}/download/app/info`)
       .then(r => r.json())
       .then(d => setApkInfo(d))
@@ -409,7 +409,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         {/* ── APK Download ── */}
         <DownloadBtnWrap>
           <DownloadAppBtn
-            href={apkInfo?.available ? `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/download/app` : undefined}
+            href={apkInfo?.available ? `${(process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '')}/download/app` : undefined}
             download={apkInfo?.available ? 'Visio-v1.0.apk' : undefined}
             aria-label="Download Visio App"
             style={!apkInfo?.available ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : {}}

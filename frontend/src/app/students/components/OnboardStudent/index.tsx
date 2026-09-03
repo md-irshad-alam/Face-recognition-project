@@ -235,7 +235,7 @@ export default function OnboardStudent({ onClear, initialData }: OnboardStudentP
                       <img
                         src={
                           photoPreview.startsWith("/")
-                            ? `http://127.0.0.1:8000${photoPreview}`
+                            ? `${(process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '')}${photoPreview}`
                             : photoPreview
                         }
                         alt="Preview"

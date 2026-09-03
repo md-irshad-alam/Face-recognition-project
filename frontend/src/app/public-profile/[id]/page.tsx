@@ -65,7 +65,8 @@ export default function PublicProfilePage() {
         setLoading(true);
         // Fetch student data. 
         // Endpoint is already public as verified in main.py
-        const response = await fetch(`http://127.0.0.1:8000/students/${id}`);
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '');
+        const response = await fetch(`${baseUrl}/students/${id}`);
         if (!response.ok) throw new Error('Student not found');
         const data = await response.json();
         setStudent(data.student);
@@ -98,6 +99,8 @@ export default function PublicProfilePage() {
     </div>
   );
 
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.visio.school').replace(/\/+$/, '');
+
   return (
     <PublicWrapper>
       <PublicContainer>
@@ -109,7 +112,7 @@ export default function PublicProfilePage() {
         <SC.ProfileCard style={{ padding: '3rem' }}>
           <SC.AvatarBox style={{ width: '160px', height: '160px' }}>
             <img 
-              src={student.photo_url ? `http://127.0.0.1:8000${student.photo_url}` : 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + student.id} 
+              src={student.photo_url ? (student.photo_url.startsWith('http') ? student.photo_url : `${baseUrl}${student.photo_url.startsWith('/') ? '' : '/'}${student.photo_url}`) : 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + student.id} 
               alt={student.name} 
             />
             <div className="badge"><RiVerifiedBadgeFill /></div>

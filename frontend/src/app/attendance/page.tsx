@@ -61,8 +61,8 @@ interface DeviceNode {
 const COLORS = ['#818CF8', '#34D399', '#F472B6', '#10B981', '#FB923C', '#60A5FA', '#A78BFA'];
 const randomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/attendance';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'devices'>('attendance');
